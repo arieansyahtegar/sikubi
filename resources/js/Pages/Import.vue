@@ -149,6 +149,10 @@ function uploadFile() {
 const showDeleteModal = ref(false);
 const deleteTargetBatch = ref(null);
 const showTrashed = ref(false);
+const showForceDeleteModal = ref(false);
+const forceDeleteTarget = ref(null);
+const showMultipleForceDeleteModal = ref(false);
+const selectedTrashed = ref([]);
 
 function confirmDeleteBatch(batch) {
     deleteTargetBatch.value = batch;
@@ -187,17 +191,22 @@ function restoreBatch(batch) {
 }
 
 // Force delete modal
-const showForceDeleteModal = ref(false);
-const forceDeleteTarget = ref(null);
 
 function confirmForceDelete(batch) {
     forceDeleteTarget.value = batch;
     showForceDeleteModal.value = true;
 }
 
-function executeForceDelete() {
-    if (!forceDeleteTarget.value) return;
-    router.delete(`/import/${forceDeleteTarget.value.id}/force`, {
+function confirmMultipleForceDelete() {
+    if (selectedTrashed.value.length === 0) return;
+    showMultipleForceDeleteModal.value = true;
+}
+
+function executeForceDelete(batch = null) {
+    const targetId = batch ? batch.id : forceDeleteTarget.value?.id;
+    if (!targetId) return;
+    
+    router.delete(`/import/${targetId}/force`, {
         preserveScroll: true,
         onSuccess: (p) => {
             const result = p.props.flash?.importResult;
@@ -207,7 +216,32 @@ function executeForceDelete() {
             }
         },
         onError: () => addToast?.('Gagal menghapus permanen', 'error'),
-        onFinish: () => { showForceDeleteModal.value = false; forceDeleteTarget.value = null; },
+        onFinish: () => {
+            showForceDeleteModal.value = false;
+            forceDeleteTarget.value = null;
+            // Remove deleted item from selection
+            selectedTrashed.value = selectedTrashed.value.filter(id => id !== targetId);
+            if (props.trashedBatches?.length === 0) {
+                showTrashed.value = false;
+            }
+        },
+    });
+}
+
+function executeMultipleForceDelete() {
+    if (selectedTrashed.value.length === 0) return;
+
+    router.post(route('import.forceDestroyBatch'), {
+        ids: selectedTrashed.value
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showMultipleForceDeleteModal.value = false;
+            selectedTrashed.value = [];
+            if (props.trashedBatches?.length === 0) {
+                showTrashed.value = false;
+            }
+        },
     });
 }
 
@@ -222,7 +256,7 @@ function formatCurrency(v) {
 </script>
 
 <template>
-    <Head title="Import CSV — SIKUBI" />
+    <Head title="Import Data — SIKUBI" />
     <AppLayout>
         <div class="space-y-6 animate-fade-in">
             <div>
@@ -496,16 +530,29 @@ function formatCurrency(v) {
             </div>
             <!-- Trashed Batches Section -->
             <div v-if="trashedBatches?.length" class="glass-card p-4 sm:p-6">
-                <button @click="showTrashed = !showTrashed" class="flex items-center gap-2 text-sm font-semibold text-surface-600 hover:text-plum transition-colors w-full">
-                    <svg :class="['w-4 h-4 transition-transform', showTrashed ? 'rotate-90' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
-                    <span>🗑️ Riwayat Dihapus ({{ trashedBatches.length }})</span>
-                </button>
-                <Transition name="slide-up">
-                    <div v-if="showTrashed" class="mt-4 space-y-2">
-                        <div v-for="b in trashedBatches" :key="b.id" class="flex items-center justify-between gap-2 p-3 rounded-xl bg-red-50/50 border border-red-100">
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-surface-700 truncate">{{ b.file_name }}</p>
-                                <p class="text-[10px] text-surface-500">{{ b.success_rows }} transaksi · Dihapus {{ formatDate(b.deleted_at) }}</p>
+                <div class="flex items-center justify-between">
+                    <button @click="showTrashed = !showTrashed" class="flex items-center gap-2 text-sm font-semibold text-surface-600 hover:text-plum transition-colors">
+                        <svg :class="['w-4 h-4 transition-transform', showTrashed ? 'rotate-90' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                        <span>🗑️ Riwayat Dihapus ({{ trashedBatches.length }})</span>
+                    </button>
+                    <button 
+                        v-if="showTrashed && selectedTrashed.length > 0"
+                        @click="confirmMultipleForceDelete"
+                        class="text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg border border-red-200 transition-colors flex items-center gap-1"
+                    >
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                        Hapus Permanen Terpilih ({{ selectedTrashed.length }})
+                    </button>
+                </div>
+                <Transition name="expand">
+                    <div v-show="showTrashed" class="mt-4 space-y-2">
+                        <div v-for="b in trashedBatches" :key="b.id" class="flex items-center justify-between gap-3 p-3 rounded-xl bg-red-50/50 border border-red-100">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <input type="checkbox" v-model="selectedTrashed" :value="b.id" class="w-4 h-4 text-rose-500 border-rose-300 rounded focus:ring-rose-500 bg-white" />
+                                <div>
+                                    <p class="text-sm font-medium text-surface-700 truncate">{{ b.file_name }}</p>
+                                    <p class="text-[10px] text-surface-500">{{ b.success_rows }} transaksi · Dihapus {{ formatDate(b.deleted_at) }}</p>
+                                </div>
                             </div>
                             <div class="flex items-center gap-1.5 flex-shrink-0">
                                 <button @click="restoreBatch(b)" class="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors">
@@ -534,7 +581,6 @@ function formatCurrency(v) {
             @cancel="showDeleteModal = false"
         />
 
-        <!-- Force Delete Confirmation Modal -->
         <ConfirmModal
             :show="showForceDeleteModal"
             title="Hapus Permanen?"
@@ -543,6 +589,17 @@ function formatCurrency(v) {
             variant="danger"
             @confirm="executeForceDelete"
             @cancel="showForceDeleteModal = false"
+        />
+
+        <!-- Multiple Force Delete Confirmation Modal -->
+        <ConfirmModal
+            :show="showMultipleForceDeleteModal"
+            title="Hapus Permanen Terpilih?"
+            :message="`Anda akan menghapus secara permanen ${selectedTrashed.length} file import beserta semua transaksinya. Tindakan ini TIDAK dapat dibatalkan.`"
+            confirmText="Ya, Hapus Semua"
+            variant="danger"
+            @confirm="executeMultipleForceDelete"
+            @cancel="showMultipleForceDeleteModal = false"
         />
     </AppLayout>
 </template>

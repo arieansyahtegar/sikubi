@@ -353,7 +353,7 @@ class CsvImportService
                     continue;
                 }
 
-                $classification = $this->classifier->classify($parsed['description'], $parsed['type']);
+                $classification = $this->classifier->classify($parsed['description'], $parsed['type'], $accountId);
 
                 Transaction::create([
                     'import_batch_id' => $batch->id,

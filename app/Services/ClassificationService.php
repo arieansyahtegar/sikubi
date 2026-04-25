@@ -13,14 +13,21 @@ class ClassificationService
      * Stage 2: Fuzzy pattern matching via token similarity (confidence: 0.6-0.9)
      * Stage 3: Historical KNN similarity (confidence: 0.5-0.8)
      */
-    public function classify(string $description, string $type): array
+    public function classify(string $description, string $type, ?int $accountId = null): array
     {
         $upperDesc = strtoupper(trim($description));
 
         // Stage 1: Rule-based matching (strict type match first)
-        $rules = ClassificationRule::with('category')
-            ->orderBy('priority', 'asc')
-            ->get();
+        $rulesQuery = ClassificationRule::with('category')->orderBy('priority', 'asc');
+        
+        if ($accountId) {
+            $rulesQuery->where(function ($q) use ($accountId) {
+                $q->where('bank_account_id', $accountId)
+                  ->orWhereNull('bank_account_id');
+            });
+        }
+        
+        $rules = $rulesQuery->get();
 
         // 1a: Match rules where category type matches transaction type
         foreach ($rules as $rule) {
@@ -97,10 +104,15 @@ class ClassificationService
         }
 
         // Stage 3: Historical similarity (KNN from past classified transactions)
-        $historicalTxs = Transaction::where('type', $type)
+        $historicalQuery = Transaction::where('type', $type)
             ->whereNotNull('category_id')
-            ->whereIn('classification_method', ['RULE_BASED', 'MANUAL'])
-            ->select('description', 'category_id')
+            ->whereIn('classification_method', ['RULE_BASED', 'MANUAL']);
+
+        if ($accountId) {
+            $historicalQuery->where('bank_account_id', $accountId);
+        }
+
+        $historicalTxs = $historicalQuery->select('description', 'category_id')
             ->orderByDesc('created_at')
             ->limit(500)
             ->get();
@@ -151,18 +163,30 @@ class ClassificationService
         // Stage 4: Auto-Suggestion (create category if same keyword appears 3+ times unclassified)
         $keyword = $this->extractKeyword($upperDesc, $type);
         if ($keyword && mb_strlen($keyword) >= 3) {
-            $similarUnclassified = Transaction::where('type', $type)
+            $similarQuery = Transaction::where('type', $type)
                 ->whereNull('category_id')
                 ->where('classification_method', 'UNCLASSIFIED')
-                ->where('description', 'LIKE', "%{$keyword}%")
-                ->count();
+                ->where('description', 'LIKE', "%{$keyword}%");
+                
+            if ($accountId) {
+                $similarQuery->where('bank_account_id', $accountId);
+            }
+            
+            $similarUnclassified = $similarQuery->count();
 
             if ($similarUnclassified >= 2) { // current + 2 existing = 3 total
                 // Check if suggested category already exists for this keyword
-                $suggested = \App\Models\Category::where('is_suggested', true)
+                $suggestedQuery = \App\Models\Category::where('is_suggested', true)
                     ->where('name', 'LIKE', "%{$keyword}%")
-                    ->where('type', $type)
-                    ->first();
+                    ->where('type', $type);
+                    
+                if ($accountId) {
+                    $suggestedQuery->where('bank_account_id', $accountId);
+                } else {
+                    $suggestedQuery->whereNull('bank_account_id');
+                }
+                
+                $suggested = $suggestedQuery->first();
 
                 if (!$suggested) {
                     $suggested = \App\Models\Category::create([
@@ -171,6 +195,7 @@ class ClassificationService
                         'color' => '#F59E0B', // amber for suggested
                         'is_suggested' => true,
                         'suggestion_count' => $similarUnclassified + 1,
+                        'bank_account_id' => $accountId,
                     ]);
 
                     \Illuminate\Support\Facades\Log::info("Auto-created suggested category: {$suggested->name}", [

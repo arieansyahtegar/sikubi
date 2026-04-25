@@ -14,7 +14,7 @@ const pageTitle = computed(() => {
     const url = page.url;
     const titles = {
         '/dashboard': 'Dashboard',
-        '/import': 'Import CSV',
+        '/import': 'Import Data',
         '/transactions': 'Transaksi',
         '/accounts': 'Rekening Bank',
         '/anomalies': 'Deteksi Anomali',
@@ -33,7 +33,7 @@ const currentDate = computed(() =>
 const mainNav = computed(() => {
     const items = [
         { path: '/dashboard', label: 'Dashboard', icon: 'M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z', roles: ['DIREKTUR', 'ADMIN_KEUANGAN'] },
-        { path: '/import', label: 'Import CSV', icon: 'M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5', roles: ['ADMIN_KEUANGAN'] },
+        { path: '/import', label: 'Import Data', icon: 'M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5', roles: ['ADMIN_KEUANGAN'] },
         { path: '/transactions', label: 'Transaksi', icon: 'M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5', roles: ['DIREKTUR', 'ADMIN_KEUANGAN'] },
         { path: '/accounts', label: 'Rekening Bank', icon: 'M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z', roles: ['ADMIN_KEUANGAN'] },
         { path: '/anomalies', label: 'Deteksi Anomali', icon: 'M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z', roles: ['ADMIN_KEUANGAN'] },

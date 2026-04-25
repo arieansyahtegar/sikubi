@@ -93,60 +93,69 @@ function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: '
                     Menampilkan {{ transactions.from }}–{{ transactions.to }} dari {{ transactions.total }} transaksi
                 </div>
 
-                <!-- Desktop Table -->
-                <div class="hidden sm:block table-container">
-                    <table class="data-table">
-                        <thead><tr><th>Tanggal</th><th>Deskripsi</th><th>Kategori</th><th>Metode</th><th>Rekening</th><th class="text-right">Jumlah</th></tr></thead>
-                        <tbody>
-                            <tr v-for="tx in transactions.data" :key="tx.id">
-                                <td class="whitespace-nowrap">{{ formatDate(tx.transaction_date) }}</td>
-                                <td class="max-w-xs truncate">{{ tx.description }}</td>
-                                <td>
-                                    <span v-if="tx.category" class="badge" :style="{ background: tx.category.color + '15', color: tx.category.color, border: '1px solid ' + tx.category.color + '40' }">
-                                        {{ tx.category.name }}
-                                    </span>
-                                    <span v-else class="text-amber-600 text-xs italic">Belum Terkategori</span>
-                                </td>
-                                <td class="text-xs">
-                                    <span v-if="tx.classification_method === 'RULE_BASED'" class="badge-green text-[10px]">Aturan</span>
-                                    <span v-else-if="tx.classification_method === 'PATTERN_MATCH'" class="badge-blue text-[10px]">Pola</span>
-                                    <span v-else-if="tx.classification_method === 'HISTORICAL'" class="badge-yellow text-[10px]">Historis</span>
-                                    <span v-else-if="tx.classification_method === 'MANUAL'" class="badge-rose text-[10px]">Manual</span>
-                                    <span v-else-if="tx.classification_method === 'AUTO_SUGGESTED'" class="badge-yellow text-[10px]">Saran</span>
-                                    <span v-else class="text-surface-400 text-[10px]">—</span>
-                                </td>
-                                <td class="text-xs">{{ tx.bank_account?.account_alias || tx.bank_account?.bank_name }}</td>
-                                <td :class="['text-right font-bold whitespace-nowrap', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
-                                    {{ tx.type === 'DEBIT' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <!-- Not Found State -->
+                <div v-if="!transactions.data.length" class="text-center py-12 text-surface-500">
+                    <svg class="w-12 h-12 text-surface-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                    <p class="font-medium text-surface-600">Tidak ada transaksi yang ditemukan.</p>
+                    <p class="text-xs mt-1">Coba sesuaikan filter pencarian atau rentang tanggal.</p>
                 </div>
 
-                <!-- Mobile Cards -->
-                <div class="sm:hidden space-y-3">
-                    <div v-for="tx in transactions.data" :key="tx.id" class="mobile-card">
-                        <div class="flex justify-between items-start">
-                            <p class="text-sm font-semibold text-plum truncate flex-1">{{ tx.description }}</p>
-                            <p :class="['text-sm font-bold ml-2', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
-                                {{ tx.type === 'DEBIT' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
-                            </p>
-                        </div>
-                        <p class="text-xs text-surface-500">{{ formatDate(tx.transaction_date) }}</p>
+                <template v-else>
+                    <!-- Desktop Table -->
+                    <div class="hidden sm:block table-container">
+                        <table class="data-table">
+                            <thead><tr><th>Tanggal</th><th>Deskripsi</th><th>Kategori</th><th>Metode</th><th>Rekening</th><th class="text-right">Jumlah</th></tr></thead>
+                            <tbody>
+                                <tr v-for="tx in transactions.data" :key="tx.id">
+                                    <td class="whitespace-nowrap">{{ formatDate(tx.transaction_date) }}</td>
+                                    <td class="max-w-xs truncate">{{ tx.description }}</td>
+                                    <td>
+                                        <span v-if="tx.category" class="badge" :style="{ background: tx.category.color + '15', color: tx.category.color, border: '1px solid ' + tx.category.color + '40' }">
+                                            {{ tx.category.name }}
+                                        </span>
+                                        <span v-else class="text-amber-600 text-xs italic">Belum Terkategori</span>
+                                    </td>
+                                    <td class="text-xs">
+                                        <span v-if="tx.classification_method === 'RULE_BASED'" class="badge-green text-[10px]">Aturan</span>
+                                        <span v-else-if="tx.classification_method === 'PATTERN_MATCH'" class="badge-blue text-[10px]">Pola</span>
+                                        <span v-else-if="tx.classification_method === 'HISTORICAL'" class="badge-yellow text-[10px]">Historis</span>
+                                        <span v-else-if="tx.classification_method === 'MANUAL'" class="badge-rose text-[10px]">Manual</span>
+                                        <span v-else-if="tx.classification_method === 'AUTO_SUGGESTED'" class="badge-yellow text-[10px]">Saran</span>
+                                        <span v-else class="text-surface-400 text-[10px]">—</span>
+                                    </td>
+                                    <td class="text-xs">{{ tx.bank_account?.account_alias || tx.bank_account?.bank_name }}</td>
+                                    <td :class="['text-right font-bold whitespace-nowrap', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
+                                        {{ tx.type === 'DEBIT' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                </div>
 
-                <!-- Pagination -->
-                <div v-if="transactions.last_page > 1" class="flex justify-center gap-2 mt-6">
-                    <template v-for="link in transactions.links" :key="link.label">
-                        <button v-if="link.url"
-                            @click="router.get(link.url)"
-                            :class="['px-3 py-1.5 text-sm rounded-lg transition-colors', link.active ? 'bg-gradient-rose text-white' : 'text-surface-600 hover:bg-rose-50']"
-                            v-html="link.label"
-                        />
-                    </template>
-                </div>
+                    <!-- Mobile Cards -->
+                    <div class="sm:hidden space-y-3">
+                        <div v-for="tx in transactions.data" :key="tx.id" class="mobile-card">
+                            <div class="flex justify-between items-start">
+                                <p class="text-sm font-semibold text-plum truncate flex-1">{{ tx.description }}</p>
+                                <p :class="['text-sm font-bold ml-2', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
+                                    {{ tx.type === 'DEBIT' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
+                                </p>
+                            </div>
+                            <p class="text-xs text-surface-500">{{ formatDate(tx.transaction_date) }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div v-if="transactions.last_page > 1" class="flex justify-center gap-2 mt-6">
+                        <template v-for="link in transactions.links" :key="link.label">
+                            <button v-if="link.url"
+                                @click="router.get(link.url)"
+                                :class="['px-3 py-1.5 text-sm rounded-lg transition-colors', link.active ? 'bg-gradient-rose text-white' : 'text-surface-600 hover:bg-rose-50']"
+                                v-html="link.label"
+                            />
+                        </template>
+                    </div>
+                </template>
             </div>
         </div>
     </AppLayout>

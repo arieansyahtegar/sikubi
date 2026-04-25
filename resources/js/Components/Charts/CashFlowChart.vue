@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import * as echarts from 'echarts/core';
 import { BarChart, LineChart } from 'echarts/charts';
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
@@ -31,8 +31,9 @@ function buildOption() {
             formatter: (params) => {
                 let s = `<div style="font-weight:600;margin-bottom:4px">${params[0].axisValue}</div>`;
                 params.forEach(p => {
+                    let c = typeof p.color === 'string' ? p.color : (p.seriesName === 'Pemasukan' ? '#10b981' : (p.seriesName === 'Pengeluaran' ? '#e11d48' : '#B76E79'));
                     s += `<div style="display:flex;align-items:center;gap:6px;margin:2px 0">
-                        <span style="width:8px;height:8px;border-radius:50%;background:${p.color}"></span>
+                        <span style="width:8px;height:8px;border-radius:50%;background:${c}"></span>
                         <span>${p.seriesName}: <b>${formatRp(p.value)}</b></span></div>`;
                 });
                 return s;
@@ -79,35 +80,52 @@ function buildOption() {
                 smooth: true,
             },
         ],
+        animationDuration: 800,
+        animationEasing: 'cubicInOut',
     };
 }
 
 let resizeObserver = null;
 
+function initChart() {
+    if (!chartRef.value) return;
+    if (chart) chart.dispose();
+    chart = echarts.init(chartRef.value);
+    chart.setOption(buildOption());
+}
+
 onMounted(() => {
-    if (chartRef.value) {
-        chart = echarts.init(chartRef.value);
-        chart.setOption(buildOption());
-        
-        resizeObserver = new ResizeObserver(() => {
-            if (chartRef.value && chartRef.value.clientWidth > 0) {
-                chart.resize();
-            }
-        });
-        resizeObserver.observe(chartRef.value);
-    }
+    nextTick(() => {
+        initChart();
+
+        if (chartRef.value) {
+            resizeObserver = new ResizeObserver(() => {
+                requestAnimationFrame(() => {
+                    if (chartRef.value && chartRef.value.clientWidth > 0 && chart) {
+                        chart.resize();
+                    }
+                });
+            });
+            resizeObserver.observe(chartRef.value);
+        }
+    });
 });
 
 watch(() => props.data, () => {
-    chart?.setOption(buildOption(), true);
+    if (chart) {
+        chart.setOption(buildOption(), true);
+    } else {
+        nextTick(initChart);
+    }
 }, { deep: true });
 
 onBeforeUnmount(() => {
     if (resizeObserver) resizeObserver.disconnect();
     chart?.dispose();
+    chart = null;
 });
 </script>
 
 <template>
-    <div ref="chartRef" class="w-full h-full"></div>
+    <div ref="chartRef" class="w-full h-full min-h-[240px]"></div>
 </template>

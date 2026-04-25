@@ -8,7 +8,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Category extends Model
 {
-    protected $fillable = ['name', 'type', 'parent_id', 'color', 'icon', 'sort_order', 'is_suggested', 'suggestion_count'];
+    protected $fillable = ['name', 'type', 'parent_id', 'color', 'icon', 'sort_order', 'is_suggested', 'suggestion_count', 'bank_account_id'];
+
+    public function bankAccount(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(BankAccount::class);
+    }
 
     protected function casts(): array
     {

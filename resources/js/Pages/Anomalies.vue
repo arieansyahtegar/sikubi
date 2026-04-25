@@ -97,7 +97,10 @@ function runMoM() {
                             <button @click="reviewFlag(flag.id, false)" class="btn-secondary text-xs !py-1.5 !px-3">Sudah Ditinjau</button>
                             <button @click="reviewFlag(flag.id, true)" class="btn-ghost text-xs !py-1.5 !px-3">Abaikan</button>
                         </div>
-                        <span v-else class="badge-green">✓ Ditinjau</span>
+                        <div v-else class="flex items-center gap-2">
+                            <span v-if="flag.is_dismissed" class="badge text-[10px] bg-surface-100 text-surface-500 border border-surface-200">⚠ Diabaikan</span>
+                            <span v-else class="badge-green text-[10px]">✓ Ditinjau</span>
+                        </div>
                     </div>
                 </div>
                 <div v-if="!anomalies.data?.length" class="glass-card p-12 text-center">

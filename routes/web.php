@@ -35,6 +35,7 @@ Route::middleware(['auth', 'verified', 'role:ADMIN_KEUANGAN'])->group(function (
     Route::delete('/import/{batch}', [CsvImportController::class, 'destroy'])->name('import.destroy');
     Route::post('/import/{id}/restore', [CsvImportController::class, 'restore'])->name('import.restore');
     Route::delete('/import/{id}/force', [CsvImportController::class, 'forceDestroy'])->name('import.forceDestroy');
+    Route::post('/import/force-batch', [CsvImportController::class, 'forceDestroyBatch'])->name('import.forceDestroyBatch');
     Route::post('/import/duplicates/resolve-batch', [CsvImportController::class, 'resolveBatch'])->name('import.resolveBatch');
 
     // Bank Accounts

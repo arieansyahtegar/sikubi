@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BankAccount;
 use App\Models\Category;
 use App\Models\ClassificationRule;
 use Illuminate\Http\Request;
@@ -9,11 +10,25 @@ use Inertia\Inertia;
 
 class SettingsController extends Controller
 {
-    public function categories()
+    public function categories(Request $request)
     {
+        $accountId = $request->input('account_id');
+
+        $query = Category::withCount('transactions', 'classificationRules')
+            ->with('bankAccount:id,bank_name,account_alias');
+
+        if ($accountId) {
+            // Show categories for this bank OR global (null)
+            $query->where(function ($q) use ($accountId) {
+                $q->where('bank_account_id', $accountId)
+                  ->orWhereNull('bank_account_id');
+            });
+        }
+
         return Inertia::render('Settings/Categories', [
-            'categories' => Category::withCount('transactions', 'classificationRules')
-                ->orderBy('type')->orderBy('sort_order')->get(),
+            'categories' => $query->orderBy('type')->orderBy('sort_order')->get(),
+            'accounts' => BankAccount::all(),
+            'filters' => ['account_id' => $accountId],
         ]);
     }
 
@@ -24,9 +39,10 @@ class SettingsController extends Controller
             'type' => 'required|in:DEBIT,CREDIT',
             'color' => 'nullable|string|max:20',
             'icon' => 'nullable|string|max:50',
+            'bank_account_id' => 'nullable|exists:bank_accounts,id',
         ]);
 
-        Category::create($request->only(['name', 'type', 'color', 'icon']));
+        Category::create($request->only(['name', 'type', 'color', 'icon', 'bank_account_id']));
         return back();
     }
 
@@ -36,12 +52,24 @@ class SettingsController extends Controller
         return back();
     }
 
-    public function rules()
+    public function rules(Request $request)
     {
+        $accountId = $request->input('account_id');
+
+        $query = ClassificationRule::with('category:id,name,type,color', 'bankAccount:id,bank_name,account_alias');
+
+        if ($accountId) {
+            $query->where(function ($q) use ($accountId) {
+                $q->where('bank_account_id', $accountId)
+                  ->orWhereNull('bank_account_id');
+            });
+        }
+
         return Inertia::render('Settings/Rules', [
-            'rules' => ClassificationRule::with('category:id,name,type,color')
-                ->orderBy('priority')->get(),
+            'rules' => $query->orderBy('priority')->get(),
             'categories' => Category::orderBy('type')->orderBy('name')->get(),
+            'accounts' => BankAccount::all(),
+            'filters' => ['account_id' => $accountId],
         ]);
     }
 
@@ -52,9 +80,10 @@ class SettingsController extends Controller
             'pattern' => 'required|string|max:255',
             'match_type' => 'required|in:EXACT,CONTAINS,REGEX',
             'priority' => 'nullable|integer|min:1',
+            'bank_account_id' => 'nullable|exists:bank_accounts,id',
         ]);
 
-        ClassificationRule::create($request->only(['category_id', 'pattern', 'match_type', 'priority']));
+        ClassificationRule::create($request->only(['category_id', 'pattern', 'match_type', 'priority', 'bank_account_id']));
         return back();
     }
 

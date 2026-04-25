@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import * as echarts from 'echarts/core';
 import { PieChart } from 'echarts/charts';
 import { TooltipComponent, LegendComponent } from 'echarts/components';
@@ -17,9 +17,19 @@ function formatRp(val) {
     return 'Rp ' + val?.toLocaleString('id-ID');
 }
 
+const PALETTE = [
+    '#B76E79', '#C9A96E', '#E3607F', '#34d399', '#60a5fa',
+    '#f59e0b', '#a78bfa', '#f472b6', '#2dd4bf', '#fb923c',
+];
+
 function buildOption() {
-    const d = props.data || [];
+    const d = (props.data || []).map((item, i) => ({
+        ...item,
+        color: item.name === 'Belum Diklasifikasi' ? '#CBD5E1' : (item.color === '#B76E79' ? PALETTE[i % PALETTE.length] : (item.color || PALETTE[i % PALETTE.length])),
+    }));
     const total = d.reduce((s, i) => s + (i.value || 0), 0);
+    const hasMultiple = d.length > 1;
+
     return {
         tooltip: {
             trigger: 'item',
@@ -28,33 +38,41 @@ function buildOption() {
             borderWidth: 1,
             textStyle: { color: '#3D1F2B', fontSize: 12 },
             formatter: (p) => `<b>${p.name}</b><br/>${formatRp(p.value)} (${p.percent}%)`,
+            confine: true,
         },
         legend: {
             orient: 'vertical',
-            right: 0,
+            right: 10,
             top: 'center',
             textStyle: { color: '#655849', fontSize: 11 },
             itemWidth: 10, itemHeight: 10, itemGap: 8,
-            formatter: (name) => {
-                const item = d.find(i => i.name === name);
-                return name.length > 14 ? name.substring(0, 14) + '…' : name;
-            },
+            formatter: (name) => name.length > 20 ? name.substring(0, 20) + '…' : name,
         },
+        animationDuration: 800,
+        animationEasing: 'cubicInOut',
         series: [{
             type: 'pie',
-            radius: ['50%', '75%'],
-            center: ['35%', '50%'],
+            radius: ['45%', '70%'],
+            center: ['38%', '50%'],
             avoidLabelOverlap: true,
             label: {
                 show: true,
                 position: 'center',
                 formatter: () => `{total|${formatRp(total)}}\n{sub|Total}`,
                 rich: {
-                    total: { fontSize: 16, fontWeight: 'bold', color: '#3D1F2B', lineHeight: 22 },
+                    total: { fontSize: 15, fontWeight: 'bold', color: '#3D1F2B', lineHeight: 22 },
                     sub: { fontSize: 11, color: '#8C7D6E', lineHeight: 18 },
                 },
             },
-            itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+            emphasis: {
+                label: { show: true, fontSize: 15, fontWeight: 'bold' },
+                itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.1)' },
+            },
+            itemStyle: {
+                borderRadius: hasMultiple ? 6 : 0,
+                borderColor: '#fff',
+                borderWidth: hasMultiple ? 2 : 0,
+            },
             data: d.map(item => ({
                 value: item.value,
                 name: item.name,
@@ -66,30 +84,45 @@ function buildOption() {
 
 let resizeObserver = null;
 
+function initChart() {
+    if (!chartRef.value) return;
+    if (chart) chart.dispose();
+    chart = echarts.init(chartRef.value);
+    chart.setOption(buildOption());
+}
+
 onMounted(() => {
-    if (chartRef.value) {
-        chart = echarts.init(chartRef.value);
-        chart.setOption(buildOption());
-        
-        resizeObserver = new ResizeObserver(() => {
-            if (chartRef.value && chartRef.value.clientWidth > 0) {
-                chart.resize();
-            }
-        });
-        resizeObserver.observe(chartRef.value);
-    }
+    nextTick(() => {
+        initChart();
+
+        if (chartRef.value) {
+            resizeObserver = new ResizeObserver(() => {
+                requestAnimationFrame(() => {
+                    if (chartRef.value && chartRef.value.clientWidth > 0 && chart) {
+                        chart.resize();
+                    }
+                });
+            });
+            resizeObserver.observe(chartRef.value);
+        }
+    });
 });
 
 watch(() => props.data, () => {
-    chart?.setOption(buildOption(), true);
+    if (chart) {
+        chart.setOption(buildOption(), true);
+    } else {
+        nextTick(initChart);
+    }
 }, { deep: true });
 
 onBeforeUnmount(() => {
     if (resizeObserver) resizeObserver.disconnect();
     chart?.dispose();
+    chart = null;
 });
 </script>
 
 <template>
-    <div ref="chartRef" class="w-full h-full"></div>
+    <div ref="chartRef" class="w-full h-full min-h-[240px]"></div>
 </template>

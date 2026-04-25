@@ -48,7 +48,12 @@ const widgets = ref(loadWidgets());
 function saveWidgets() { localStorage.setItem(STORAGE_KEY, JSON.stringify(widgets.value)); }
 function toggleWidget(id) {
     const w = widgets.value.find(w => w.id === id);
-    if (w) { w.collapsed = !w.collapsed; saveWidgets(); }
+    if (w) { 
+        w.collapsed = !w.collapsed; 
+    } else {
+        widgets.value.push({ id, collapsed: true });
+    }
+    saveWidgets();
 }
 function onDragEnd() { saveWidgets(); }
 function isCollapsed(id) { return widgets.value.find(w => w.id === id)?.collapsed ?? false; }
@@ -160,21 +165,23 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
                                         </button>
                                     </div>
                                 </div>
-                                <div v-show="!isCollapsed('imports')" class="p-4 sm:p-5 space-y-2">
-                                    <div v-for="batch in recentImports" :key="batch.id" class="flex items-center gap-3 p-3 rounded-xl bg-cream-200/30 hover:bg-cream-200/60 transition-colors">
-                                        <div class="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-                                            <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                                <Transition name="expand">
+                                    <div v-show="!isCollapsed('imports')" class="p-4 sm:p-5 space-y-2">
+                                        <div v-for="batch in recentImports" :key="batch.id" class="flex items-center gap-3 p-3 rounded-xl bg-cream-200/30 hover:bg-cream-200/60 transition-colors">
+                                            <div class="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                                                <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm font-medium text-plum truncate">{{ batch.file_name }}</p>
+                                                <p class="text-[10px] text-surface-500">{{ batch.success_rows }} berhasil · {{ formatDatetime(batch.imported_at) }}</p>
+                                            </div>
+                                            <span :class="['text-[10px] font-semibold px-2 py-0.5 rounded-lg', batch.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600']">
+                                                {{ batch.status === 'COMPLETED' ? 'Selesai' : batch.status }}
+                                            </span>
                                         </div>
-                                        <div class="flex-1 min-w-0">
-                                            <p class="text-sm font-medium text-plum truncate">{{ batch.file_name }}</p>
-                                            <p class="text-[10px] text-surface-500">{{ batch.success_rows }} berhasil · {{ formatDatetime(batch.imported_at) }}</p>
-                                        </div>
-                                        <span :class="['text-[10px] font-semibold px-2 py-0.5 rounded-lg', batch.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600']">
-                                            {{ batch.status === 'COMPLETED' ? 'Selesai' : batch.status }}
-                                        </span>
+                                        <div v-if="!recentImports?.length" class="text-center py-6 text-surface-500 text-xs">Belum ada import CSV.</div>
                                     </div>
-                                    <div v-if="!recentImports?.length" class="text-center py-6 text-surface-500 text-xs">Belum ada import CSV.</div>
-                                </div>
+                                </Transition>
                             </div>
 
                             <!-- Anomalies Widget (paired) -->
@@ -191,24 +198,26 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
                                         </button>
                                     </div>
                                 </div>
-                                <div v-show="!isCollapsed('anomalies')" class="p-4 sm:p-5 space-y-2">
-                                    <div v-for="flag in pendingAnomalies" :key="flag.id" class="flex items-center gap-3 p-3 rounded-xl bg-cream-200/30 hover:bg-cream-200/60 transition-colors">
-                                        <div class="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
-                                            <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                                <Transition name="expand">
+                                    <div v-show="!isCollapsed('anomalies')" class="p-4 sm:p-5 space-y-2">
+                                        <div v-for="flag in pendingAnomalies" :key="flag.id" class="flex items-center gap-3 p-3 rounded-xl bg-cream-200/30 hover:bg-cream-200/60 transition-colors">
+                                            <div class="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+                                                <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm text-plum truncate">{{ flag.transaction?.description }}</p>
+                                                <p class="text-[10px] text-surface-500">Skor: {{ (flag.score * 100).toFixed(0) }}%</p>
+                                            </div>
+                                            <p :class="['text-xs font-bold', flag.transaction?.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
+                                                {{ formatCurrency(flag.transaction?.amount || 0) }}
+                                            </p>
                                         </div>
-                                        <div class="flex-1 min-w-0">
-                                            <p class="text-sm text-plum truncate">{{ flag.transaction?.description }}</p>
-                                            <p class="text-[10px] text-surface-500">Skor: {{ (flag.score * 100).toFixed(0) }}%</p>
+                                        <div v-if="!pendingAnomalies?.length" class="text-center py-6 text-surface-500 text-xs">
+                                            <svg class="w-8 h-8 text-surface-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>
+                                            Tidak ada anomali yang perlu ditinjau.
                                         </div>
-                                        <p :class="['text-xs font-bold', flag.transaction?.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
-                                            {{ formatCurrency(flag.transaction?.amount || 0) }}
-                                        </p>
                                     </div>
-                                    <div v-if="!pendingAnomalies?.length" class="text-center py-6 text-surface-500 text-xs">
-                                        <svg class="w-8 h-8 text-surface-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>
-                                        Tidak ada anomali yang perlu ditinjau.
-                                    </div>
-                                </div>
+                                </Transition>
                             </div>
                         </div>
 
@@ -226,12 +235,9 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
                                             @click="selectedGranularity = g.value"
                                         >{{ g.label }}</button>
                                     </div>
-                                    <button @click="toggleWidget('cashflow')" class="p-1 text-surface-400 hover:text-plum rounded transition-colors">
-                                        <svg :class="['w-4 h-4 transition-transform', isCollapsed('cashflow') ? '-rotate-90' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
-                                    </button>
                                 </div>
                             </div>
-                            <div v-show="!isCollapsed('cashflow')" class="p-4 sm:p-6">
+                            <div class="p-4 sm:p-6">
                                 <div class="h-[280px] sm:h-[350px]"><CashFlowChart :data="cashflow" /></div>
                             </div>
                         </div>
@@ -242,40 +248,49 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
                                 <div class="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-rose-100/40 cursor-move drag-handle">
                                     <div class="flex items-center gap-2">
                                         <svg class="w-4 h-4 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" /></svg>
-                                        <h3 class="section-title">Komposisi Pengeluaran</h3>
+                                        <h3 class="section-title">Komposisi Transaksi</h3>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <span class="badge-rose">Periode aktif</span>
-                                        <button @click="toggleWidget('charts')" class="p-1 text-surface-400 hover:text-plum rounded transition-colors">
+                                        <span class="badge-rose hidden sm:inline-flex">Periode aktif</span>
+                                        <button @click="toggleWidget('charts')" class="p-1 text-surface-400 hover:text-plum rounded transition-colors ml-1">
                                             <svg :class="['w-4 h-4 transition-transform', isCollapsed('charts') ? '-rotate-90' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
                                         </button>
                                     </div>
                                 </div>
-                                <div v-show="!isCollapsed('charts')" class="p-4 sm:p-6">
-                                    <div class="h-[280px] sm:h-[300px]"><CategoryDonutChart :data="breakdown" /></div>
-                                </div>
+                                <Transition name="expand">
+                                    <div v-show="!isCollapsed('charts')" class="p-4 sm:p-6">
+                                        <div class="h-[280px] sm:h-[300px]"><CategoryDonutChart :data="breakdown" /></div>
+                                    </div>
+                                </Transition>
                             </div>
                             <div class="glass-card overflow-hidden">
                                 <div class="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-rose-100/40">
                                     <h3 class="section-title">Transaksi Terbaru</h3>
-                                    <Link href="/transactions" class="text-xs text-rose-gold hover:text-rose-600 transition-colors font-semibold">Lihat semua →</Link>
-                                </div>
-                                <div class="p-4 sm:p-6 space-y-2 max-h-[340px] overflow-y-auto">
-                                    <div v-for="tx in recentTransactions" :key="tx.id" class="flex items-center gap-3 p-3 rounded-xl hover:bg-cream-200/50 transition-colors">
-                                        <div :class="['w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0', tx.type === 'DEBIT' ? 'bg-emerald-50' : 'bg-red-50']">
-                                            <svg v-if="tx.type === 'DEBIT'" class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" /></svg>
-                                            <svg v-else class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" /></svg>
-                                        </div>
-                                        <div class="flex-1 min-w-0">
-                                            <p class="text-sm text-plum truncate">{{ tx.description }}</p>
-                                            <p class="text-xs text-surface-500">{{ formatDate(tx.transaction_date) }}<span v-if="tx.category" class="ml-1">· {{ tx.category.name }}</span></p>
-                                        </div>
-                                        <p :class="['text-sm font-bold whitespace-nowrap', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
-                                            {{ tx.type === 'DEBIT' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
-                                        </p>
+                                    <div class="flex items-center gap-2">
+                                        <Link href="/transactions" class="text-xs text-rose-gold hover:text-rose-600 transition-colors font-semibold">Lihat semua →</Link>
+                                        <button @click="toggleWidget('recent_tx')" class="p-1 text-surface-400 hover:text-plum rounded transition-colors ml-1">
+                                            <svg :class="['w-4 h-4 transition-transform', isCollapsed('recent_tx') ? '-rotate-90' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                                        </button>
                                     </div>
-                                    <div v-if="!recentTransactions?.length" class="text-center py-8 text-surface-500 text-sm">Belum ada transaksi.</div>
                                 </div>
+                                <Transition name="expand">
+                                    <div v-show="!isCollapsed('recent_tx')" class="p-4 sm:p-6 space-y-2 max-h-[340px] overflow-y-auto">
+                                        <div v-for="tx in recentTransactions" :key="tx.id" class="flex items-center gap-3 p-3 rounded-xl hover:bg-cream-200/50 transition-colors">
+                                            <div :class="['w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0', tx.type === 'DEBIT' ? 'bg-emerald-50' : 'bg-red-50']">
+                                                <svg v-if="tx.type === 'DEBIT'" class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" /></svg>
+                                                <svg v-else class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" /></svg>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm text-plum truncate">{{ tx.description }}</p>
+                                                <p class="text-xs text-surface-500">{{ formatDate(tx.transaction_date) }}<span v-if="tx.category" class="ml-1">· {{ tx.category.name }}</span></p>
+                                            </div>
+                                            <p :class="['text-sm font-bold whitespace-nowrap', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
+                                                {{ tx.type === 'DEBIT' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
+                                            </p>
+                                        </div>
+                                        <div v-if="!recentTransactions?.length" class="text-center py-8 text-surface-500 text-sm">Belum ada transaksi.</div>
+                                    </div>
+                                </Transition>
                             </div>
                         </div>
                     </div>

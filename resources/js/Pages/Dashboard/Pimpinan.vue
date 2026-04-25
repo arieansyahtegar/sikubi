@@ -109,23 +109,18 @@ function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: '
                 </div>
             </div>
 
-            <!-- Cashflow Chart (collapsible) -->
+            <!-- Cashflow Chart -->
             <div class="glass-card overflow-hidden">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 border-b border-rose-100/40 gap-3">
                     <h3 class="section-title">Arus Kas</h3>
-                    <div class="flex items-center gap-3">
-                        <div class="flex items-center gap-1 bg-cream-200/60 rounded-xl p-1">
-                            <button v-for="g in granularities" :key="g.value"
-                                :class="['px-3 py-1.5 text-xs font-semibold rounded-lg transition-all', selectedGranularity === g.value ? 'bg-white text-plum shadow-soft' : 'text-surface-600 hover:text-plum']"
-                                @click="selectedGranularity = g.value"
-                            >{{ g.label }}</button>
-                        </div>
-                        <button @click="toggle('cashflow')" class="p-1 text-surface-400 hover:text-plum rounded transition-colors">
-                            <svg :class="['w-4 h-4 transition-transform', collapsed.cashflow ? '-rotate-90' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
-                        </button>
+                    <div class="flex items-center gap-1 bg-cream-200/60 rounded-xl p-1">
+                        <button v-for="g in granularities" :key="g.value"
+                            :class="['px-3 py-1.5 text-xs font-semibold rounded-lg transition-all', selectedGranularity === g.value ? 'bg-white text-plum shadow-soft' : 'text-surface-600 hover:text-plum']"
+                            @click="selectedGranularity = g.value"
+                        >{{ g.label }}</button>
                     </div>
                 </div>
-                <div v-show="!collapsed.cashflow" class="p-4 sm:p-6">
+                <div class="p-4 sm:p-6">
                     <div class="h-[280px] sm:h-[350px]"><CashFlowChart :data="cashflow" /></div>
                 </div>
             </div>
@@ -134,39 +129,48 @@ function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: '
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 <div class="glass-card overflow-hidden">
                     <div class="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-rose-100/40">
-                        <h3 class="section-title">Komposisi Pengeluaran</h3>
+                        <h3 class="section-title">Komposisi Transaksi</h3>
                         <div class="flex items-center gap-2">
-                            <span class="badge-rose">Periode aktif</span>
-                            <button @click="toggle('donut')" class="p-1 text-surface-400 hover:text-plum rounded transition-colors">
+                            <span class="badge-rose hidden sm:inline-flex">Periode aktif</span>
+                            <button @click="toggle('donut')" class="p-1 text-surface-400 hover:text-plum rounded transition-colors ml-1">
                                 <svg :class="['w-4 h-4 transition-transform', collapsed.donut ? '-rotate-90' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
                             </button>
                         </div>
                     </div>
-                    <div v-show="!collapsed.donut" class="p-4 sm:p-6">
-                        <div class="h-[280px] sm:h-[300px]"><CategoryDonutChart :data="breakdown" /></div>
-                    </div>
+                    <Transition name="expand">
+                        <div v-show="!collapsed.donut" class="p-4 sm:p-6">
+                            <div class="h-[280px] sm:h-[300px]"><CategoryDonutChart :data="breakdown" /></div>
+                        </div>
+                    </Transition>
                 </div>
                 <div class="glass-card overflow-hidden">
                     <div class="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-rose-100/40">
                         <h3 class="section-title">Transaksi Terbaru</h3>
-                        <Link href="/transactions" class="text-xs text-rose-gold hover:text-rose-600 transition-colors font-semibold">Lihat semua →</Link>
-                    </div>
-                    <div class="space-y-2 max-h-[340px] overflow-y-auto p-4 sm:p-6">
-                        <div v-for="tx in recentTransactions" :key="tx.id" class="flex items-center gap-3 p-3 rounded-xl hover:bg-cream-200/50 transition-colors">
-                            <div :class="['w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0', tx.type === 'DEBIT' ? 'bg-emerald-50' : 'bg-red-50']">
-                                <svg v-if="tx.type === 'DEBIT'" class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" /></svg>
-                                <svg v-else class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" /></svg>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm text-plum truncate">{{ tx.description }}</p>
-                                <p class="text-xs text-surface-500">{{ formatDate(tx.transaction_date) }}<span v-if="tx.category" class="ml-1">· {{ tx.category.name }}</span></p>
-                            </div>
-                            <p :class="['text-sm font-bold whitespace-nowrap', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
-                                {{ tx.type === 'DEBIT' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
-                            </p>
+                        <div class="flex items-center gap-2">
+                            <Link href="/transactions" class="text-xs text-rose-gold hover:text-rose-600 transition-colors font-semibold">Lihat semua →</Link>
+                            <button @click="toggle('recent_tx')" class="p-1 text-surface-400 hover:text-plum rounded transition-colors ml-1">
+                                <svg :class="['w-4 h-4 transition-transform', collapsed.recent_tx ? '-rotate-90' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                            </button>
                         </div>
-                        <div v-if="!recentTransactions?.length" class="text-center py-8 text-surface-500 text-sm">Belum ada transaksi.</div>
                     </div>
+                    <Transition name="expand">
+                        <div v-show="!collapsed.recent_tx" class="space-y-2 max-h-[340px] overflow-y-auto p-4 sm:p-6">
+                            <div v-for="tx in recentTransactions" :key="tx.id" class="flex items-center gap-3 p-3 rounded-xl hover:bg-cream-200/50 transition-colors">
+                                <div :class="['w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0', tx.type === 'DEBIT' ? 'bg-emerald-50' : 'bg-red-50']">
+                                    <svg v-if="tx.type === 'DEBIT'" class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" /></svg>
+                                    <svg v-else class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" /></svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm text-plum truncate">{{ tx.description }}</p>
+                                    <p class="text-xs text-surface-500">{{ formatDate(tx.transaction_date) }}<span v-if="tx.category" class="ml-1">· {{ tx.category.name }}</span></p>
+                                </div>
+                                <p :class="['text-sm font-bold whitespace-nowrap', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
+                                    {{ tx.type === 'DEBIT' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
+                                </p>
+                            </div>
+                            <div v-if="!recentTransactions?.length" class="text-center py-8 text-surface-500 text-sm">Belum ada transaksi.</div>
+                        </div>
+                    </Transition>
                 </div>
             </div>
         </div>

@@ -212,6 +212,42 @@ class CsvImportController extends Controller
         ]);
     }
 
+    public function forceDestroyBatch(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        if (empty($ids)) return back();
+
+        $batches = ImportBatch::onlyTrashed()->whereIn('id', $ids)->get();
+        $totalTxCount = 0;
+        $batchCount = 0;
+
+        foreach ($batches as $batch) {
+            $txIds = Transaction::onlyTrashed()->where('import_batch_id', $batch->id)->pluck('id');
+            \App\Models\AnomalyFlag::whereIn('transaction_id', $txIds)->forceDelete();
+            
+            $txCount = $txIds->count();
+            Transaction::onlyTrashed()->where('import_batch_id', $batch->id)->forceDelete();
+            
+            $batch->forceDelete();
+            $totalTxCount += $txCount;
+            $batchCount++;
+        }
+
+        Log::info("Permanently deleted {$batchCount} import batches ({$totalTxCount} transactions)");
+
+        return back()->with('importResult', [
+            'status' => 'DELETED',
+            'bank_format' => 'Dihapus Permanen',
+            'periode' => '',
+            'total_rows' => $totalTxCount,
+            'success_rows' => 0,
+            'failed_rows' => 0,
+            'duplicate_rows' => 0,
+            'failed_details' => [],
+            'message' => "Berhasil menghapus permanen {$batchCount} file beserta {$totalTxCount} transaksi",
+        ]);
+    }
+
     public function resolveBatch(Request $request)
     {
         $ids = $request->input('ids', []);

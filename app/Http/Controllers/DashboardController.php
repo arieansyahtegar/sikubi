@@ -37,29 +37,27 @@ class DashboardController extends Controller
         $unclassifiedCount = (clone $summaryQuery)->where('classification_method', 'UNCLASSIFIED')->count();
 
         // Cashflow chart data — use date range or default
-        $chartStart = $dateFrom ?? now()->subMonths($granularity === 'yearly' ? 24 : ($granularity === 'monthly' ? 12 : 3))->startOfMonth();
+        $minDate = Transaction::forAccount($accountId)->min('transaction_date');
+        $chartStart = $dateFrom ?? ($minDate ? Carbon::parse($minDate)->startOfDay() : now()->subMonths(3)->startOfMonth());
         $chartEnd = $dateTo ?? now();
         $cashflow = $this->getCashflowData($chartStart, $chartEnd, $granularity, $accountId);
 
-        // Category breakdown
+        // Category breakdown (All transactions: Pemasukan + Pengeluaran)
         $breakdownQuery = Transaction::query()
-            ->forAccount($accountId)
-            ->credit()
-            ->whereNotNull('category_id');
+            ->forAccount($accountId);
         if ($dateFrom) $breakdownQuery->where('transaction_date', '>=', $dateFrom);
         if ($dateTo) $breakdownQuery->where('transaction_date', '<=', $dateTo);
-        if (!$dateFrom && !$dateTo) $breakdownQuery->where('transaction_date', '>=', now()->subDays(30));
 
         $breakdown = $breakdownQuery
             ->select('category_id', DB::raw('SUM(amount) as total'))
             ->groupBy('category_id')
-            ->with('category:id,name,color')
+            ->with('category:id,name,color,type')
             ->orderByDesc('total')
             ->get()
             ->map(fn($item) => [
-                'name' => $item->category->name ?? 'Lainnya',
+                'name' => $item->category ? "{$item->category->name} (" . ($item->category->type === 'DEBIT' ? 'In' : 'Out') . ")" : 'Belum Diklasifikasi',
                 'value' => round($item->total),
-                'color' => $item->category->color ?? '#B76E79',
+                'color' => $item->category->color ?? '#CBD5E1', // Gray-300
             ]);
 
         // Recent transactions

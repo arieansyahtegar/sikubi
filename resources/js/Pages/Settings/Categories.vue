@@ -1,15 +1,16 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 
-defineProps({ categories: Array });
+const props = defineProps({ categories: Array, accounts: Array, filters: Object });
 const page = usePage();
 const canManage = page.props.permissions?.canManageSettings;
 const showForm = ref(false);
 const showHelp = ref(false);
-const form = useForm({ name: '', type: 'CREDIT', color: '#B76E79', icon: 'folder' });
+const selectedAccountId = ref(props.filters?.account_id || '');
+const form = useForm({ name: '', type: 'CREDIT', color: '#B76E79', icon: 'folder', bank_account_id: '' });
 
 const showDeleteModal = ref(false);
 const deleteTarget = ref(null);
@@ -31,6 +32,18 @@ function executeDelete() {
 function approveCategory(cat) {
     router.patch(`/settings/categories/${cat.id}/approve`, {}, { preserveScroll: true });
 }
+
+// Bank account filter
+watch(selectedAccountId, () => {
+    router.get('/settings/categories', {
+        account_id: selectedAccountId.value || undefined,
+    }, { preserveState: true, preserveScroll: true });
+});
+
+function bankLabel(cat) {
+    if (!cat.bank_account) return 'Global';
+    return cat.bank_account.account_alias || cat.bank_account.bank_name;
+}
 </script>
 
 <template>
@@ -43,6 +56,10 @@ function approveCategory(cat) {
                     <p class="text-sm text-surface-600 mt-1">Kelola kategori transaksi keuangan</p>
                 </div>
                 <div class="flex gap-2">
+                    <select v-model="selectedAccountId" class="input-field !w-auto text-sm !py-2">
+                        <option value="">Semua Rekening</option>
+                        <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
+                    </select>
                     <button @click="showHelp = !showHelp" class="btn-secondary" title="Bantuan">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" /></svg>
                         Bantuan
@@ -50,7 +67,6 @@ function approveCategory(cat) {
                     <button v-if="canManage" @click="showForm = !showForm" class="btn-primary">+ Tambah</button>
                 </div>
             </div>
-
 
             <!-- Help Panel -->
             <Transition name="slide-up">
@@ -68,8 +84,8 @@ function approveCategory(cat) {
                             <p class="text-surface-500 text-xs mt-1">Contoh: Transfer Keluar, Biaya Operasional, Gaji</p>
                         </div>
                         <div>
-                            <h4 class="font-semibold text-plum mb-1.5">🎨 Warna</h4>
-                            <p class="text-surface-600">Warna untuk membedakan kategori di grafik dan tabel.</p>
+                            <h4 class="font-semibold text-plum mb-1.5">🏦 Rekening Bank</h4>
+                            <p class="text-surface-600">Pilih rekening bank untuk membuat kategori khusus per bank. Biarkan kosong untuk kategori global.</p>
                         </div>
                         <div>
                             <h4 class="font-semibold text-plum mb-1.5">🔗 Aturan & Transaksi</h4>
@@ -81,33 +97,48 @@ function approveCategory(cat) {
             </Transition>
 
             <!-- Add Form (Admin only) -->
-            <div v-if="showForm && canManage" class="glass-card p-6">
-                <h3 class="text-sm font-semibold text-plum mb-4">Tambah Kategori Baru</h3>
-                <form @submit.prevent="submit" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div><label class="label-text">Nama Kategori</label><input v-model="form.name" class="input-field" placeholder="cth: Pembelian Produk" required /></div>
-                    <div><label class="label-text">Tipe</label>
-                        <select v-model="form.type" class="input-field"><option value="DEBIT">Pemasukan (Uang Masuk)</option><option value="CREDIT">Pengeluaran (Uang Keluar)</option></select>
-                    </div>
-                    <div><label class="label-text">Warna</label><input v-model="form.color" type="color" class="input-field h-[42px]" /></div>
-                    <div class="sm:col-span-3"><button type="submit" :disabled="form.processing" class="btn-primary">Simpan</button></div>
-                </form>
-            </div>
+            <Transition name="slide-up">
+                <div v-if="showForm && canManage" class="glass-card p-6">
+                    <h3 class="text-sm font-semibold text-plum mb-4">Tambah Kategori Baru</h3>
+                    <form @submit.prevent="submit" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                        <div><label class="label-text">Nama Kategori</label><input v-model="form.name" class="input-field" placeholder="cth: Pembelian Produk" required /></div>
+                        <div><label class="label-text">Tipe</label>
+                            <select v-model="form.type" class="input-field"><option value="DEBIT">Pemasukan (Uang Masuk)</option><option value="CREDIT">Pengeluaran (Uang Keluar)</option></select>
+                        </div>
+                        <div><label class="label-text">Rekening Bank</label>
+                            <select v-model="form.bank_account_id" class="input-field">
+                                <option value="">Global (Semua Rekening)</option>
+                                <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end gap-2">
+                            <div class="flex-shrink-0"><label class="label-text">Warna</label><input v-model="form.color" type="color" class="input-field h-[42px] w-14" /></div>
+                            <button type="submit" :disabled="form.processing" class="btn-primary flex-1">Simpan</button>
+                        </div>
+                    </form>
+                </div>
+            </Transition>
 
             <!-- Table -->
-            <div class="glass-card overflow-hidden">
+            <div v-if="categories.length > 0" class="glass-card overflow-hidden">
                 <div class="hidden sm:block table-container">
                     <table class="data-table">
-                        <thead><tr><th>Nama</th><th>Tipe</th><th>Transaksi</th><th>Aturan</th><th v-if="canManage"></th></tr></thead>
+                        <thead><tr><th>Nama</th><th>Tipe</th><th>Rekening</th><th>Transaksi</th><th>Aturan</th><th v-if="canManage"></th></tr></thead>
                         <tbody>
                             <tr v-for="cat in categories" :key="cat.id" :class="cat.is_suggested ? 'bg-amber-50/30' : ''">
                                 <td>
                                     <div class="flex items-center gap-2">
-                                        <span class="w-3 h-3 rounded-full" :style="{ background: cat.color }" />
+                                        <span class="w-3 h-3 rounded-full flex-shrink-0" :style="{ background: cat.color }" />
                                         {{ cat.name }}
                                         <span v-if="cat.is_suggested" class="badge-yellow text-[10px]">Disarankan Sistem</span>
                                     </div>
                                 </td>
                                 <td><span :class="cat.type === 'DEBIT' ? 'badge-green' : 'badge-red'">{{ cat.type === 'DEBIT' ? 'Pemasukan' : 'Pengeluaran' }}</span></td>
+                                <td>
+                                    <span :class="cat.bank_account ? 'badge-blue' : 'badge text-surface-500 bg-surface-100 border border-surface-200'">
+                                        {{ bankLabel(cat) }}
+                                    </span>
+                                </td>
                                 <td>{{ cat.transactions_count }}</td>
                                 <td>{{ cat.classification_rules_count }}</td>
                                 <td v-if="canManage">
@@ -126,10 +157,19 @@ function approveCategory(cat) {
                 </div>
                 <div class="sm:hidden p-4 space-y-3">
                     <div v-for="cat in categories" :key="cat.id" class="mobile-card flex items-center justify-between">
-                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" :style="{ background: cat.color }" /><span class="font-medium">{{ cat.name }}</span></div>
+                        <div>
+                            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" :style="{ background: cat.color }" /><span class="font-medium">{{ cat.name }}</span></div>
+                            <span class="text-[10px] text-surface-500 mt-0.5">{{ bankLabel(cat) }}</span>
+                        </div>
                         <span :class="cat.type === 'DEBIT' ? 'badge-green' : 'badge-red'">{{ cat.type === 'DEBIT' ? 'Pemasukan' : 'Pengeluaran' }}</span>
                     </div>
                 </div>
+            </div>
+            
+            <div v-else class="text-center py-12 text-surface-500">
+                <svg class="w-12 h-12 text-surface-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" /></svg>
+                <p class="font-medium text-surface-600">Tidak ada data kategori.</p>
+                <p class="text-xs mt-1">Belum ada kategori yang ditambahkan untuk rekening ini.</p>
             </div>
         </div>
 
@@ -146,8 +186,8 @@ function approveCategory(cat) {
 </template>
 
 <style scoped>
-.slide-up-enter-active { transition: all 0.3s ease-out; }
-.slide-up-leave-active { transition: all 0.2s ease-in; }
+.slide-up-enter-active { transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+.slide-up-leave-active { transition: all 0.25s cubic-bezier(0.5, 0, 0.75, 0); }
 .slide-up-enter-from { opacity: 0; transform: translateY(16px); }
 .slide-up-leave-to { opacity: 0; transform: translateY(-8px); }
 </style>
