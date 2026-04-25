@@ -54,12 +54,12 @@ function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: '
     <Head title="Transaksi — SIKUBI" />
     <AppLayout>
         <div class="space-y-6 animate-fade-in">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h1 class="page-title">Transaksi</h1>
-                    <p class="text-sm text-surface-600 mt-1">Riwayat seluruh transaksi keuangan</p>
+                    <h1 class="page-title text-lg sm:text-2xl">Transaksi</h1>
+                    <p class="text-xs sm:text-sm text-surface-600 mt-0.5">Riwayat seluruh transaksi keuangan</p>
                 </div>
-                <button v-if="isAdmin" @click="exportCsv" class="btn-secondary text-xs gap-1.5">
+                <button v-if="isAdmin" @click="exportCsv" class="btn-secondary text-xs gap-1.5 w-full sm:w-auto justify-center sm:justify-start">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12M12 16.5V3" /></svg>
                     Export CSV
                 </button>
@@ -68,22 +68,22 @@ function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: '
             <div class="glass-card p-4 sm:p-6">
                 <!-- Filters -->
                 <div class="space-y-3 mb-6">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                        <input v-model="search" @keyup.enter="applyFilters" type="text" placeholder="Cari deskripsi..." class="input-field" />
-                        <select v-model="type" @change="applyFilters" class="input-field">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
+                        <input v-model="search" @keyup.enter="applyFilters" type="text" placeholder="Cari deskripsi..." class="input-field !py-1.5 sm:!py-2" />
+                        <select v-model="type" @change="applyFilters" class="input-field !py-1.5 sm:!py-2">
                             <option value="">Semua Tipe</option>
                             <option value="DEBIT">Pemasukan</option>
                             <option value="CREDIT">Pengeluaran</option>
                         </select>
-                        <select v-if="categories?.length" v-model="categoryId" @change="applyFilters" class="input-field">
+                        <select v-if="categories?.length" v-model="categoryId" @change="applyFilters" class="input-field !py-1.5 sm:!py-2">
                             <option value="">Semua Kategori</option>
                             <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
                         </select>
-                        <select v-if="accounts?.length" v-model="accountId" @change="applyFilters" class="input-field">
+                        <select v-if="accounts?.length" v-model="accountId" @change="applyFilters" class="input-field !py-1.5 sm:!py-2">
                             <option value="">Semua Rekening</option>
                             <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
                         </select>
-                        <button @click="applyFilters" class="btn-primary w-full h-full">Cari</button>
+                        <button @click="applyFilters" class="btn-primary w-full h-full text-xs sm:text-sm !py-1.5 sm:!py-2">Cari</button>
                     </div>
                     <DateRangePicker :initial-from="filters?.date_from" :initial-to="filters?.date_to" @update="onDateUpdate" />
                 </div>

@@ -55,15 +55,15 @@ function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: '
     <AppLayout>
         <div class="space-y-6 animate-fade-in">
             <!-- Welcome -->
-            <div class="glass-card p-5 sm:p-6 bg-gradient-to-r from-rose-50 via-white to-champagne-50 border-rose-200/40">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <h1 class="text-xl sm:text-2xl font-display font-bold text-plum">
+            <div class="glass-card p-4 sm:p-6 bg-gradient-to-r from-rose-50 via-white to-champagne-50 border-rose-200/40">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <h1 class="text-lg sm:text-2xl font-display font-bold text-plum truncate">
                             Selamat {{ greeting }}, {{ user?.name?.split(' ')[0] || 'Pimpinan' }} 👋
                         </h1>
-                        <p class="text-sm text-surface-600 mt-1">Ringkasan keuangan PT Bigenmi Gemilang Indonesia</p>
+                        <p class="text-xs sm:text-sm text-surface-600 mt-0.5 truncate">Ringkasan keuangan PT Bigenmi Gemilang Indonesia</p>
                     </div>
-                    <select v-model="selectedAccountId" class="input-field !w-auto text-sm !py-2">
+                    <select v-model="selectedAccountId" class="input-field !py-1.5 sm:!py-2 !w-auto max-w-full sm:max-w-[200px] flex-shrink-0">
                         <option value="">Semua Rekening</option>
                         <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
                     </select>
@@ -111,11 +111,11 @@ function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: '
 
             <!-- Cashflow Chart -->
             <div class="glass-card overflow-hidden">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 border-b border-rose-100/40 gap-3">
-                    <h3 class="section-title">Arus Kas</h3>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 border-b border-rose-100/40 gap-2">
+                    <h3 class="section-title text-sm sm:text-base">Arus Kas</h3>
                     <div class="flex items-center gap-1 bg-cream-200/60 rounded-xl p-1">
                         <button v-for="g in granularities" :key="g.value"
-                            :class="['px-3 py-1.5 text-xs font-semibold rounded-lg transition-all', selectedGranularity === g.value ? 'bg-white text-plum shadow-soft' : 'text-surface-600 hover:text-plum']"
+                            :class="['px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold rounded-lg transition-all', selectedGranularity === g.value ? 'bg-white text-plum shadow-soft' : 'text-surface-600 hover:text-plum']"
                             @click="selectedGranularity = g.value"
                         >{{ g.label }}</button>
                     </div>
@@ -139,7 +139,7 @@ function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: '
                     </div>
                     <Transition name="expand">
                         <div v-show="!collapsed.donut" class="p-4 sm:p-6">
-                            <div class="h-[280px] sm:h-[300px]"><CategoryDonutChart :data="breakdown" /></div>
+                            <div class="h-[320px] sm:h-[300px]"><CategoryDonutChart :data="breakdown" /></div>
                         </div>
                     </Transition>
                 </div>

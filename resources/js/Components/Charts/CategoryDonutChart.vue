@@ -22,6 +22,10 @@ const PALETTE = [
     '#f59e0b', '#a78bfa', '#f472b6', '#2dd4bf', '#fb923c',
 ];
 
+function getContainerWidth() {
+    return chartRef.value?.clientWidth || 400;
+}
+
 function buildOption() {
     const d = (props.data || []).map((item, i) => ({
         ...item,
@@ -29,6 +33,8 @@ function buildOption() {
     }));
     const total = d.reduce((s, i) => s + (i.value || 0), 0);
     const hasMultiple = d.length > 1;
+    const w = getContainerWidth();
+    const isMobile = w < 480;
 
     return {
         tooltip: {
@@ -40,7 +46,14 @@ function buildOption() {
             formatter: (p) => `<b>${p.name}</b><br/>${formatRp(p.value)} (${p.percent}%)`,
             confine: true,
         },
-        legend: {
+        legend: isMobile ? {
+            orient: 'horizontal',
+            bottom: 0,
+            left: 'center',
+            textStyle: { color: '#655849', fontSize: 10 },
+            itemWidth: 8, itemHeight: 8, itemGap: 6,
+            formatter: (name) => name.length > 14 ? name.substring(0, 14) + '…' : name,
+        } : {
             orient: 'vertical',
             right: 10,
             top: 'center',
@@ -52,20 +65,20 @@ function buildOption() {
         animationEasing: 'cubicInOut',
         series: [{
             type: 'pie',
-            radius: ['45%', '70%'],
-            center: ['38%', '50%'],
+            radius: isMobile ? ['38%', '62%'] : ['45%', '70%'],
+            center: isMobile ? ['50%', '42%'] : ['38%', '50%'],
             avoidLabelOverlap: true,
             label: {
                 show: true,
                 position: 'center',
                 formatter: () => `{total|${formatRp(total)}}\n{sub|Total}`,
                 rich: {
-                    total: { fontSize: 15, fontWeight: 'bold', color: '#3D1F2B', lineHeight: 22 },
-                    sub: { fontSize: 11, color: '#8C7D6E', lineHeight: 18 },
+                    total: { fontSize: isMobile ? 13 : 15, fontWeight: 'bold', color: '#3D1F2B', lineHeight: isMobile ? 18 : 22 },
+                    sub: { fontSize: isMobile ? 10 : 11, color: '#8C7D6E', lineHeight: isMobile ? 14 : 18 },
                 },
             },
             emphasis: {
-                label: { show: true, fontSize: 15, fontWeight: 'bold' },
+                label: { show: true, fontSize: isMobile ? 13 : 15, fontWeight: 'bold' },
                 itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.1)' },
             },
             itemStyle: {
@@ -99,6 +112,7 @@ onMounted(() => {
             resizeObserver = new ResizeObserver(() => {
                 requestAnimationFrame(() => {
                     if (chartRef.value && chartRef.value.clientWidth > 0 && chart) {
+                        chart.setOption(buildOption(), true);
                         chart.resize();
                     }
                 });

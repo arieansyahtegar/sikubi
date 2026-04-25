@@ -72,13 +72,13 @@ function formatDate(d) {
 </script>
 
 <template>
-    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+    <div class="flex flex-wrap sm:flex-nowrap items-center gap-2">
         <!-- Preset Buttons -->
-        <div class="flex items-center gap-1 bg-cream-200/60 rounded-xl p-1 flex-shrink-0">
+        <div class="flex items-center gap-1 bg-cream-200/60 rounded-xl p-1 flex-shrink-0 overflow-x-auto">
             <button
                 v-for="p in presets" :key="p.key"
                 :class="[
-                    'px-2.5 py-1.5 text-[11px] font-semibold rounded-lg transition-all whitespace-nowrap',
+                    'px-2 sm:px-2.5 py-1 sm:py-1.5 text-[10px] sm:text-[11px] font-semibold rounded-lg transition-all whitespace-nowrap',
                     activePreset === p.key
                         ? 'bg-white text-plum shadow-soft'
                         : 'text-surface-600 hover:text-plum'
@@ -87,11 +87,11 @@ function formatDate(d) {
             >{{ p.label }}</button>
             <button
                 v-if="activePreset || (dateRange && dateRange[0])"
-                class="px-2 py-1.5 text-[11px] font-semibold rounded-lg text-red-500 hover:bg-red-50 transition-all"
+                class="px-1.5 sm:px-2 py-1 sm:py-1.5 text-[10px] sm:text-[11px] font-semibold rounded-lg text-red-500 hover:bg-red-50 transition-all"
                 @click="clearFilter"
                 title="Hapus filter"
             >
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
         </div>
 

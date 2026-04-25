@@ -461,8 +461,8 @@ function formatCurrency(v) {
             </div>
 
             <!-- Import History -->
-            <div v-if="batches && batches.length > 0" class="glass-card p-6">
-                <h3 class="section-title mb-4">Riwayat Import</h3>
+            <div v-if="batches && batches.length > 0" class="glass-card p-4 sm:p-6">
+                <h3 class="section-title text-sm sm:text-base mb-3 sm:mb-4">Riwayat Import</h3>
 
                 <!-- Desktop -->
                 <div class="hidden sm:block table-container">
@@ -530,37 +530,37 @@ function formatCurrency(v) {
             </div>
             <!-- Trashed Batches Section -->
             <div v-if="trashedBatches?.length" class="glass-card p-4 sm:p-6">
-                <div class="flex items-center justify-between">
-                    <button @click="showTrashed = !showTrashed" class="flex items-center gap-2 text-sm font-semibold text-surface-600 hover:text-plum transition-colors">
-                        <svg :class="['w-4 h-4 transition-transform', showTrashed ? 'rotate-90' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <button @click="showTrashed = !showTrashed" class="flex items-center gap-2 text-xs sm:text-sm font-semibold text-surface-600 hover:text-plum transition-colors">
+                        <svg :class="['w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform', showTrashed ? 'rotate-90' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
                         <span>🗑️ Riwayat Dihapus ({{ trashedBatches.length }})</span>
                     </button>
                     <button 
                         v-if="showTrashed && selectedTrashed.length > 0"
                         @click="confirmMultipleForceDelete"
-                        class="text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg border border-red-200 transition-colors flex items-center gap-1"
+                        class="text-[10px] sm:text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-red-200 transition-colors flex items-center gap-1"
                     >
-                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
-                        Hapus Permanen Terpilih ({{ selectedTrashed.length }})
+                        <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                        Hapus Terpilih ({{ selectedTrashed.length }})
                     </button>
                 </div>
                 <Transition name="expand">
                     <div v-show="showTrashed" class="mt-4 space-y-2">
-                        <div v-for="b in trashedBatches" :key="b.id" class="flex items-center justify-between gap-3 p-3 rounded-xl bg-red-50/50 border border-red-100">
-                            <div class="flex items-center gap-3 min-w-0">
-                                <input type="checkbox" v-model="selectedTrashed" :value="b.id" class="w-4 h-4 text-rose-500 border-rose-300 rounded focus:ring-rose-500 bg-white" />
-                                <div>
+                        <div v-for="b in trashedBatches" :key="b.id" class="p-3 rounded-xl bg-red-50/50 border border-red-100 space-y-2">
+                            <div class="flex items-start gap-2">
+                                <input type="checkbox" v-model="selectedTrashed" :value="b.id" class="w-4 h-4 mt-0.5 text-rose-500 border-rose-300 rounded focus:ring-rose-500 bg-white flex-shrink-0" />
+                                <div class="min-w-0 flex-1">
                                     <p class="text-sm font-medium text-surface-700 truncate">{{ b.file_name }}</p>
                                     <p class="text-[10px] text-surface-500">{{ b.success_rows }} transaksi · Dihapus {{ formatDate(b.deleted_at) }}</p>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-1.5 flex-shrink-0">
-                                <button @click="restoreBatch(b)" class="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors">
-                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
+                            <div class="flex items-center gap-1.5 pl-6">
+                                <button @click="restoreBatch(b)" class="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" /></svg>
                                     Pulihkan
                                 </button>
-                                <button @click="confirmForceDelete(b)" class="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 transition-colors">
-                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                                <button @click="confirmForceDelete(b)" class="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 transition-colors">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
                                     Hapus Permanen
                                 </button>
                             </div>

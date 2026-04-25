@@ -32,11 +32,8 @@ function submit() {
         <div class="w-full max-w-md relative animate-scale-in">
             <!-- Logo Section -->
             <div class="text-center mb-8">
-                <div class="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-rose shadow-glow mb-4">
-                    <img src="/images/bigenmi-logo.png" alt="Bigenmi" class="w-12 h-12 object-contain" @error="$event.target.style.display='none'" />
-                    <svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" style="display: none">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-white border border-rose-200 shadow-lg mb-4 p-3">
+                    <img src="/images/bigenmi-logo.png" alt="Bigenmi" class="w-full h-full object-contain" />
                 </div>
                 <h1 class="text-3xl font-display font-bold text-plum tracking-tight">SIKUBI</h1>
                 <p class="text-sm text-surface-600 mt-1 font-body">Sistem Keuangan Bigenmi</p>

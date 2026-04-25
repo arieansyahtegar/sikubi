@@ -57,20 +57,20 @@ function runMoM() {
     <Head title="Deteksi Anomali — SIKUBI" />
     <AppLayout>
         <div class="space-y-6 animate-fade-in">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h1 class="page-title">Deteksi Anomali</h1>
-                    <p class="text-sm text-surface-600 mt-1">Identifikasi transaksi dengan pola tidak biasa</p>
+                    <h1 class="page-title text-lg sm:text-2xl">Deteksi Anomali</h1>
+                    <p class="text-xs sm:text-sm text-surface-600 mt-0.5">Identifikasi transaksi dengan pola tidak biasa</p>
                 </div>
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-2">
                     <div class="flex items-center bg-cream-200/60 p-1 rounded-xl">
-                        <button @click="setSeverity('HIGH')" :class="['px-4 py-1.5 text-xs font-semibold rounded-lg transition-all', filters?.severity === 'HIGH' ? 'bg-white text-red-500 shadow-soft' : 'text-surface-600 hover:text-plum']">Tinggi</button>
-                        <button @click="setSeverity('MEDIUM')" :class="['px-4 py-1.5 text-xs font-semibold rounded-lg transition-all', filters?.severity === 'MEDIUM' ? 'bg-white text-amber-500 shadow-soft' : 'text-surface-600 hover:text-plum']">Sedang</button>
-                        <button @click="setSeverity('ALL')" :class="['px-4 py-1.5 text-xs font-semibold rounded-lg transition-all', filters?.severity === 'ALL' ? 'bg-white text-plum shadow-soft' : 'text-surface-600 hover:text-plum']">Semua</button>
+                        <button @click="setSeverity('HIGH')" :class="['px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold rounded-lg transition-all', filters?.severity === 'HIGH' ? 'bg-white text-red-500 shadow-soft' : 'text-surface-600 hover:text-plum']">Tinggi</button>
+                        <button @click="setSeverity('MEDIUM')" :class="['px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold rounded-lg transition-all', filters?.severity === 'MEDIUM' ? 'bg-white text-amber-500 shadow-soft' : 'text-surface-600 hover:text-plum']">Sedang</button>
+                        <button @click="setSeverity('ALL')" :class="['px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold rounded-lg transition-all', filters?.severity === 'ALL' ? 'bg-white text-plum shadow-soft' : 'text-surface-600 hover:text-plum']">Semua</button>
                     </div>
-                    <button @click="runDetection" class="btn-primary">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
-                        Jalankan Deteksi
+                    <button @click="runDetection" class="btn-primary text-xs !py-1.5 !px-3 sm:!py-2.5 sm:!px-5">
+                        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                        Deteksi
                     </button>
                 </div>
             </div>

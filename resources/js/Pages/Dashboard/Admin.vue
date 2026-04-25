@@ -82,20 +82,18 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
     <AppLayout>
         <div class="space-y-6 animate-fade-in">
             <!-- Welcome -->
-            <div class="glass-card p-5 sm:p-6 bg-gradient-to-r from-rose-50 via-white to-champagne-50 border-rose-200/40">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <h1 class="text-xl sm:text-2xl font-display font-bold text-plum">
+            <div class="glass-card p-4 sm:p-6 bg-gradient-to-r from-rose-50 via-white to-champagne-50 border-rose-200/40">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <h1 class="text-lg sm:text-2xl font-display font-bold text-plum truncate">
                             Selamat {{ greeting }}, {{ user?.name?.split(' ')[0] || 'Admin' }} 👋
                         </h1>
-                        <p class="text-sm text-surface-600 mt-1">Panel operasional keuangan PT Bigenmi</p>
+                        <p class="text-xs sm:text-sm text-surface-600 mt-0.5 truncate">Panel operasional keuangan PT Bigenmi</p>
                     </div>
-                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                        <select v-model="selectedAccountId" class="input-field !w-auto text-sm !py-2">
-                            <option value="">Semua Rekening</option>
-                            <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
-                        </select>
-                    </div>
+                    <select v-model="selectedAccountId" class="input-field !py-1.5 sm:!py-2 !w-auto max-w-full sm:max-w-[200px] flex-shrink-0">
+                        <option value="">Semua Rekening</option>
+                        <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
+                    </select>
                 </div>
                 <div class="mt-3">
                     <DateRangePicker :initial-from="filters?.date_from" :initial-to="filters?.date_to" :initial-preset="filters?.preset" @update="onDateUpdate" />
@@ -223,18 +221,16 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
 
                         <!-- CASHFLOW WIDGET -->
                         <div v-else-if="element.id === 'cashflow'" class="glass-card overflow-hidden">
-                            <div class="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-rose-100/40 cursor-move drag-handle">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-3 border-b border-rose-100/40 cursor-move drag-handle gap-2">
                                 <div class="flex items-center gap-2">
                                     <svg class="w-4 h-4 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" /></svg>
-                                    <h3 class="section-title">Arus Kas</h3>
+                                    <h3 class="section-title text-sm sm:text-base">Arus Kas</h3>
                                 </div>
-                                <div class="flex items-center gap-3">
-                                    <div class="flex items-center gap-1 bg-cream-200/60 rounded-xl p-1">
-                                        <button v-for="g in granularities" :key="g.value"
-                                            :class="['px-3 py-1.5 text-xs font-semibold rounded-lg transition-all', selectedGranularity === g.value ? 'bg-white text-plum shadow-soft' : 'text-surface-600 hover:text-plum']"
-                                            @click="selectedGranularity = g.value"
-                                        >{{ g.label }}</button>
-                                    </div>
+                                <div class="flex items-center gap-1 bg-cream-200/60 rounded-xl p-1">
+                                    <button v-for="g in granularities" :key="g.value"
+                                        :class="['px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold rounded-lg transition-all', selectedGranularity === g.value ? 'bg-white text-plum shadow-soft' : 'text-surface-600 hover:text-plum']"
+                                        @click="selectedGranularity = g.value"
+                                    >{{ g.label }}</button>
                                 </div>
                             </div>
                             <div class="p-4 sm:p-6">
@@ -259,7 +255,7 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
                                 </div>
                                 <Transition name="expand">
                                     <div v-show="!isCollapsed('charts')" class="p-4 sm:p-6">
-                                        <div class="h-[280px] sm:h-[300px]"><CategoryDonutChart :data="breakdown" /></div>
+                                        <div class="h-[320px] sm:h-[300px]"><CategoryDonutChart :data="breakdown" /></div>
                                     </div>
                                 </Transition>
                             </div>

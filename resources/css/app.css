@@ -102,7 +102,7 @@
     /* ── Inputs ── */
     .input-field {
         @apply w-full px-4 py-2.5 bg-cream-100 border border-surface-300/60
-               rounded-xl text-plum placeholder-surface-500
+               rounded-xl text-plum placeholder-surface-500 text-[16px] sm:text-sm
                focus:border-rose-gold focus:ring-2 focus:ring-rose-gold/20 focus:outline-none
                transition-all duration-200;
     }

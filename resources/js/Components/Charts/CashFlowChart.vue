@@ -18,9 +18,17 @@ function formatRp(val) {
     return 'Rp ' + val;
 }
 
+function getContainerWidth() {
+    return chartRef.value?.clientWidth || 400;
+}
+
 function buildOption() {
     const d = props.data;
     if (!d) return {};
+    const w = getContainerWidth();
+    const isMobile = w < 480;
+    const dateCount = d.dates?.length || 0;
+
     return {
         tooltip: {
             trigger: 'axis',
@@ -28,6 +36,7 @@ function buildOption() {
             borderColor: '#FDD5DF',
             borderWidth: 1,
             textStyle: { color: '#3D1F2B', fontSize: 12 },
+            confine: true,
             formatter: (params) => {
                 let s = `<div style="font-weight:600;margin-bottom:4px">${params[0].axisValue}</div>`;
                 params.forEach(p => {
@@ -41,42 +50,53 @@ function buildOption() {
         },
         legend: {
             bottom: 0,
-            textStyle: { color: '#8C7D6E', fontSize: 11 },
-            itemWidth: 12, itemHeight: 12, itemGap: 16,
+            textStyle: { color: '#8C7D6E', fontSize: isMobile ? 10 : 11 },
+            itemWidth: isMobile ? 10 : 12, itemHeight: isMobile ? 10 : 12, itemGap: isMobile ? 8 : 16,
         },
-        grid: { left: 0, right: 8, top: 16, bottom: 40, containLabel: true },
+        grid: {
+            left: isMobile ? 4 : 0,
+            right: isMobile ? 4 : 8,
+            top: 16,
+            bottom: isMobile ? 50 : 40,
+            containLabel: true,
+        },
         xAxis: {
             type: 'category',
             data: d.dates,
             axisLine: { lineStyle: { color: '#E8DDD1' } },
-            axisLabel: { color: '#8C7D6E', fontSize: 10, rotate: d.dates?.length > 30 ? 45 : 0 },
+            axisLabel: {
+                color: '#8C7D6E',
+                fontSize: isMobile ? 9 : 10,
+                rotate: isMobile ? 55 : (dateCount > 30 ? 45 : 0),
+                interval: isMobile ? Math.max(0, Math.floor(dateCount / 6) - 1) : 'auto',
+            },
             axisTick: { show: false },
         },
         yAxis: {
             type: 'value',
             splitLine: { lineStyle: { color: '#F5EDE3', type: 'dashed' } },
-            axisLabel: { color: '#8C7D6E', fontSize: 10, formatter: (v) => formatRp(v) },
+            axisLabel: { color: '#8C7D6E', fontSize: isMobile ? 9 : 10, formatter: (v) => formatRp(v) },
         },
         series: [
             {
                 name: 'Pemasukan', type: 'bar', data: d.debitData,
                 itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                     { offset: 0, color: '#34d399' }, { offset: 1, color: '#10b981' }
-                ]), borderRadius: [6, 6, 0, 0] },
-                barMaxWidth: 24,
+                ]), borderRadius: [4, 4, 0, 0] },
+                barMaxWidth: isMobile ? 14 : 24,
             },
             {
                 name: 'Pengeluaran', type: 'bar', data: d.creditData,
                 itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                     { offset: 0, color: '#fb7185' }, { offset: 1, color: '#e11d48' }
-                ]), borderRadius: [6, 6, 0, 0] },
-                barMaxWidth: 24,
+                ]), borderRadius: [4, 4, 0, 0] },
+                barMaxWidth: isMobile ? 14 : 24,
             },
             {
                 name: 'Arus Bersih', type: 'line', data: d.netData,
                 lineStyle: { color: '#B76E79', width: 2 },
                 itemStyle: { color: '#B76E79' },
-                symbol: 'circle', symbolSize: 4,
+                symbol: isMobile ? 'none' : 'circle', symbolSize: 4,
                 smooth: true,
             },
         ],
@@ -102,6 +122,7 @@ onMounted(() => {
             resizeObserver = new ResizeObserver(() => {
                 requestAnimationFrame(() => {
                     if (chartRef.value && chartRef.value.clientWidth > 0 && chart) {
+                        chart.setOption(buildOption(), true);
                         chart.resize();
                     }
                 });
