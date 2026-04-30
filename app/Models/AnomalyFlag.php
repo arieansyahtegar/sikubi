@@ -9,7 +9,7 @@ class AnomalyFlag extends Model
 {
     protected $fillable = [
         'transaction_id', 'detection_method', 'score', 'severity',
-        'reason', 'is_reviewed', 'is_dismissed', 'detected_at',
+        'reason', 'is_reviewed', 'is_dismissed', 'review_note', 'detected_at',
     ];
 
     protected function casts(): array

@@ -58,10 +58,16 @@ class CsvImportController extends Controller
             $fileName = $file->getClientOriginalName();
             $filesProcessed[] = $fileName;
 
-            if ($ext === 'pdf') {
-                $rawContent = $pdfParser->extractText($file->getRealPath());
-            } else {
-                $rawContent = file_get_contents($file->getRealPath());
+            try {
+                if ($ext === 'pdf') {
+                    $rawContent = $pdfParser->extractText($file->getRealPath());
+                } else {
+                    $rawContent = file_get_contents($file->getRealPath());
+                }
+            } catch (\Exception $e) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'csv_files' => "Gagal membaca file {$fileName}: " . $e->getMessage()
+                ]);
             }
 
             $res = $service->importFromRawCsv($accountId, $rawContent, $fileName, auth()->id());

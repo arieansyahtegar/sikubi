@@ -45,6 +45,36 @@ class UserController extends Controller
         return back();
     }
 
+    public function update(Request $request, User $user)
+    {
+        if ($user->role === 'DIREKTUR') {
+            abort(403, 'Tidak dapat mengedit akun Direktur.');
+        }
+
+        $rules = [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+        ];
+
+        // Password is optional on update
+        if ($request->filled('password')) {
+            $rules['password'] = ['confirmed', Password::min(8)->mixedCase()->numbers()];
+        }
+
+        $request->validate($rules);
+
+        $user->name = $request->name;
+        $user->email = $request->email;
+
+        if ($request->filled('password')) {
+            $user->password = Hash::make($request->password);
+        }
+
+        $user->save();
+
+        return back();
+    }
+
     public function destroy(User $user)
     {
         if ($user->role === 'DIREKTUR') {

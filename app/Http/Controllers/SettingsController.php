@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BankAccount;
 use App\Models\Category;
 use App\Models\ClassificationRule;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -14,21 +15,37 @@ class SettingsController extends Controller
     {
         $accountId = $request->input('account_id');
 
+        // Only show accounts that actually have imported transactions
+        $accounts = BankAccount::whereHas('transactions')->get();
+
+        // If no accounts have data, show empty state
+        if ($accounts->isEmpty()) {
+            return Inertia::render('Settings/Categories', [
+                'categories' => collect([]),
+                'accounts' => $accounts,
+                'filters' => ['account_id' => $accountId],
+                'hasData' => false,
+            ]);
+        }
+
+        // If no filter selected, default to first account with data
+        $effectiveAccountId = $accountId ?: $accounts->first()?->id;
+
         $query = Category::withCount('transactions', 'classificationRules')
             ->with('bankAccount:id,bank_name,account_alias');
 
-        if ($accountId) {
-            // Show categories for this bank OR global (null)
-            $query->where(function ($q) use ($accountId) {
-                $q->where('bank_account_id', $accountId)
+        if ($effectiveAccountId) {
+            $query->where(function ($q) use ($effectiveAccountId) {
+                $q->where('bank_account_id', $effectiveAccountId)
                   ->orWhereNull('bank_account_id');
             });
         }
 
         return Inertia::render('Settings/Categories', [
             'categories' => $query->orderBy('type')->orderBy('sort_order')->get(),
-            'accounts' => BankAccount::all(),
-            'filters' => ['account_id' => $accountId],
+            'accounts' => $accounts,
+            'filters' => ['account_id' => $effectiveAccountId],
+            'hasData' => true,
         ]);
     }
 
@@ -56,20 +73,47 @@ class SettingsController extends Controller
     {
         $accountId = $request->input('account_id');
 
+        // Only show accounts that actually have imported transactions
+        $accounts = BankAccount::whereHas('transactions')->get();
+
+        // If no accounts have data, show empty state
+        if ($accounts->isEmpty()) {
+            return Inertia::render('Settings/Rules', [
+                'rules' => collect([]),
+                'categories' => collect([]),
+                'accounts' => $accounts,
+                'filters' => ['account_id' => $accountId],
+                'hasData' => false,
+            ]);
+        }
+
+        // If no filter selected, default to first account with data
+        $effectiveAccountId = $accountId ?: $accounts->first()?->id;
+
         $query = ClassificationRule::with('category:id,name,type,color', 'bankAccount:id,bank_name,account_alias');
 
-        if ($accountId) {
-            $query->where(function ($q) use ($accountId) {
-                $q->where('bank_account_id', $accountId)
+        if ($effectiveAccountId) {
+            $query->where(function ($q) use ($effectiveAccountId) {
+                $q->where('bank_account_id', $effectiveAccountId)
+                  ->orWhereNull('bank_account_id');
+            });
+        }
+
+        // Categories also filtered by selected bank
+        $catQuery = Category::orderBy('type')->orderBy('name');
+        if ($effectiveAccountId) {
+            $catQuery->where(function ($q) use ($effectiveAccountId) {
+                $q->where('bank_account_id', $effectiveAccountId)
                   ->orWhereNull('bank_account_id');
             });
         }
 
         return Inertia::render('Settings/Rules', [
             'rules' => $query->orderBy('priority')->get(),
-            'categories' => Category::orderBy('type')->orderBy('name')->get(),
-            'accounts' => BankAccount::all(),
-            'filters' => ['account_id' => $accountId],
+            'categories' => $catQuery->get(),
+            'accounts' => $accounts,
+            'filters' => ['account_id' => $effectiveAccountId],
+            'hasData' => true,
         ]);
     }
 

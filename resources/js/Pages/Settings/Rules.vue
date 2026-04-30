@@ -4,7 +4,7 @@ import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 
-const props = defineProps({ rules: Array, categories: Array, accounts: Array, filters: Object });
+const props = defineProps({ rules: Array, categories: Array, accounts: Array, filters: Object, hasData: { type: Boolean, default: true } });
 const page = usePage();
 const canManage = page.props.permissions?.canManageSettings;
 const showForm = ref(false);
@@ -37,11 +37,12 @@ const matchTypeLabels = {
 };
 
 // Bank account filter
-watch(selectedAccountId, () => {
+watch(selectedAccountId, (val) => {
+    form.bank_account_id = val;
     router.get('/settings/rules', {
         account_id: selectedAccountId.value || undefined,
     }, { preserveState: true, preserveScroll: true });
-});
+}, { immediate: true });
 
 function bankLabel(rule) {
     if (!rule.bank_account) return 'Global';
@@ -59,8 +60,7 @@ function bankLabel(rule) {
                     <p class="text-sm text-surface-600 mt-1">Basis pengetahuan untuk klasifikasi otomatis transaksi</p>
                 </div>
                 <div class="flex gap-2">
-                    <select v-model="selectedAccountId" class="input-field !w-auto text-sm !py-2">
-                        <option value="">Semua Rekening</option>
+                    <select v-if="accounts?.length" v-model="selectedAccountId" class="input-field !w-auto !pr-8 text-sm !py-2">
                         <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
                     </select>
                     <button @click="showHelp = !showHelp" class="btn-secondary" title="Bantuan">
@@ -105,7 +105,7 @@ function bankLabel(rule) {
             <Transition name="slide-up">
                 <div v-if="showForm && canManage" class="glass-card p-6">
                     <h3 class="text-sm font-semibold text-plum mb-4">Tambah Aturan Baru</h3>
-                    <form @submit.prevent="submit" class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                    <form @submit.prevent="submit" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                         <div>
                             <label class="label-text">Kategori</label>
                             <select v-model="form.category_id" class="input-field" required>
@@ -126,13 +126,6 @@ function bankLabel(rule) {
                                 <option value="REGEX">Regex</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="label-text">Rekening Bank</label>
-                            <select v-model="form.bank_account_id" class="input-field">
-                                <option value="">Global (Semua)</option>
-                                <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
-                            </select>
-                        </div>
                         <div class="flex items-end">
                             <button type="submit" :disabled="form.processing" class="btn-primary w-full">Simpan</button>
                         </div>
@@ -140,8 +133,15 @@ function bankLabel(rule) {
                 </div>
             </Transition>
 
+            <!-- No Data State -->
+            <div v-if="!hasData" class="glass-card p-12 text-center">
+                <svg class="w-12 h-12 text-surface-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" /></svg>
+                <p class="font-medium text-surface-600">Belum ada data transaksi.</p>
+                <p class="text-xs mt-1 text-surface-500">Silakan import data mutasi bank terlebih dahulu melalui menu <strong>Import Data</strong> agar kategori dan aturan dapat ditampilkan.</p>
+            </div>
+
             <!-- Table -->
-            <div v-if="rules.length > 0" class="glass-card overflow-hidden">
+            <div v-else-if="rules.length > 0" class="glass-card overflow-hidden">
                 <div class="hidden sm:block table-container">
                     <table class="data-table">
                         <thead>
@@ -149,7 +149,6 @@ function bankLabel(rule) {
                                 <th>Kata Kunci</th>
                                 <th>Tipe Pencocokan</th>
                                 <th>Kategori</th>
-                                <th>Rekening</th>
                                 <th>Jumlah Cocok</th>
                                 <th>Prioritas</th>
                                 <th v-if="canManage"></th>
@@ -161,11 +160,6 @@ function bankLabel(rule) {
                                 <td><span class="badge-blue">{{ matchTypeLabels[r.match_type] || r.match_type }}</span></td>
                                 <td>
                                     <span v-if="r.category" class="badge" :style="{ background: r.category.color + '15', color: r.category.color, border: '1px solid ' + r.category.color + '40' }">{{ r.category.name }}</span>
-                                </td>
-                                <td>
-                                    <span :class="r.bank_account ? 'badge-blue' : 'badge text-surface-500 bg-surface-100 border border-surface-200'">
-                                        {{ bankLabel(r) }}
-                                    </span>
                                 </td>
                                 <td>{{ r.hit_count }}×</td>
                                 <td>{{ r.priority }}</td>
@@ -187,7 +181,6 @@ function bankLabel(rule) {
                         <div class="flex gap-2 flex-wrap">
                             <span class="badge-blue text-[10px]">{{ matchTypeLabels[r.match_type] || r.match_type }}</span>
                             <span v-if="r.category" class="badge text-[10px]" :style="{ background: r.category.color + '15', color: r.category.color }">{{ r.category.name }}</span>
-                            <span class="badge text-[10px] bg-surface-100 text-surface-500">{{ bankLabel(r) }}</span>
                         </div>
                         <p class="text-[10px] text-surface-500 mt-1">Cocok: {{ r.hit_count }}× · Prioritas: {{ r.priority }}</p>
                     </div>

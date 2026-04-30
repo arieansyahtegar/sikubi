@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\AnomalyFlag;
+use App\Models\BankAccount;
 use App\Models\Transaction;
 use App\Services\AnomalyDetectionService;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -13,7 +13,8 @@ class AnomalyController extends Controller
 {
     public function index(Request $request)
     {
-        $severity = $request->input('severity', 'HIGH');
+        $severity = $request->input('severity', 'ALL');
+        $type = $request->input('type', 'ALL');
 
         $query = AnomalyFlag::with([
             'transaction' => fn($q) => $q->with('category:id,name,color', 'bankAccount:id,bank_name,account_alias'),
@@ -23,125 +24,80 @@ class AnomalyController extends Controller
             $query->where('severity', $severity);
         }
 
+        if ($type !== 'ALL') {
+            $query->where('detection_method', $type);
+        }
+
         $anomalies = $query->paginate(20)->withQueryString();
 
         return Inertia::render('Anomalies', [
             'anomalies' => $anomalies,
+            'accounts' => BankAccount::all(),
             'filters' => [
                 'severity' => $severity,
-            ]
+                'type' => $type,
+            ],
         ]);
     }
 
     public function detect(Request $request, AnomalyDetectionService $detector)
     {
-        $accountId = $request->input('account_id');
-        $days = $request->input('days', 90);
-        $startDate = now()->subDays($days);
+        $accountId = $request->input('account_id') ?: null;
 
-        $query = Transaction::credit()
-            ->where('transaction_date', '>=', $startDate);
-        if ($accountId) $query->where('bank_account_id', $accountId);
-
-        $transactions = $query->with('category')->orderBy('transaction_date')->get();
-
-        // Group by category
-        $categoryGroups = $transactions->groupBy(fn($tx) => $tx->category_id ?? 'uncategorized');
-
-        // Clear unreviewed flags
+        // Clear unreviewed, non-dismissed flags before re-running
         AnomalyFlag::where('is_reviewed', false)
             ->where('is_dismissed', false)
             ->delete();
 
+        $results = $detector->runFullDetection($accountId);
+
         $flagsCreated = 0;
+        foreach ($results as $r) {
+            // Skip if this transaction already has an active flag
+            $exists = AnomalyFlag::where('transaction_id', $r['transaction_id'])
+                ->where('detection_method', $r['type'] . '_' . $r['subtype'])
+                ->where(function ($q) {
+                    $q->where('is_reviewed', true)
+                      ->orWhere('is_dismissed', true);
+                })
+                ->exists();
 
-        foreach ($categoryGroups as $catId => $txs) {
-            if ($txs->count() < 5) continue;
+            if ($exists) continue;
 
-            $amounts = $txs->pluck('amount')->map(fn($a) => (float) $a)->toArray();
-
-            foreach ($txs as $tx) {
-                $historical = array_values(array_filter(
-                    $amounts,
-                    fn($_, $i) => $txs->values()[$i]->id !== $tx->id,
-                    ARRAY_FILTER_USE_BOTH
-                ));
-
-                $result = $detector->detect((float) $tx->amount, $historical);
-
-                if ($result['is_anomaly'] && $result['severity']) {
-                    AnomalyFlag::create([
-                        'transaction_id' => $tx->id,
-                        'detection_method' => 'ENSEMBLE',
-                        'score' => $result['score'],
-                        'severity' => $result['severity'],
-                        'reason' => implode('; ', $result['reasons']),
-                    ]);
-                    $flagsCreated++;
-                }
-            }
+            AnomalyFlag::create([
+                'transaction_id' => $r['transaction_id'],
+                'detection_method' => $r['type'] . '_' . $r['subtype'],
+                'score' => $r['score'],
+                'severity' => $r['severity'],
+                'reason' => $r['reason'],
+            ]);
+            $flagsCreated++;
         }
 
-        return back()->with('detectResult', [
-            'message' => "Anomaly detection complete. Found {$flagsCreated} anomalies.",
-            'flags_created' => $flagsCreated,
-            'transactions_scanned' => $transactions->count(),
+        $incomeCount = collect($results)->where('type', 'INCOME')->count();
+        $expenseCount = collect($results)->where('type', 'EXPENSE')->count();
+
+        return back()->with('flash', [
+            'detectResult' => [
+                'message' => "Deteksi selesai. {$flagsCreated} anomali ditemukan ({$incomeCount} pemasukan, {$expenseCount} pengeluaran).",
+                'flags_created' => $flagsCreated,
+            ],
         ]);
     }
 
     /**
-     * Month-over-Month Comparative Variance Detection
+     * Review an anomaly flag with a note or dismiss it.
      */
-    public function detectMoM(Request $request, AnomalyDetectionService $detector)
-    {
-        $month = $request->input('month', now()->format('Y-m'));
-        $accountId = $request->input('account_id');
-
-        $currentMonth = Carbon::createFromFormat('Y-m', $month);
-        $variances = $detector->detectMoMVariance($currentMonth, $accountId);
-
-        // Create anomaly flags for significant variances
-        $flagsCreated = 0;
-        foreach ($variances as $v) {
-            if ($v['severity'] === 'HIGH' || $v['severity'] === 'MEDIUM') {
-                // Find a representative transaction from this category this month
-                $tx = Transaction::credit()
-                    ->where('category_id', $v['category_id'])
-                    ->whereBetween('transaction_date', [
-                        $currentMonth->copy()->startOfMonth(),
-                        $currentMonth->copy()->endOfMonth(),
-                    ])
-                    ->orderByDesc('amount')
-                    ->first();
-
-                if ($tx && !AnomalyFlag::where('transaction_id', $tx->id)->where('detection_method', 'MOM_VARIANCE')->exists()) {
-                    AnomalyFlag::create([
-                        'transaction_id' => $tx->id,
-                        'detection_method' => 'MOM_VARIANCE',
-                        'score' => min($v['variance_pct'] / 100, 1.0),
-                        'severity' => $v['severity'],
-                        'reason' => $v['reason'],
-                    ]);
-                    $flagsCreated++;
-                }
-            }
-        }
-
-        return back()->with('momResult', [
-            'message' => "Analisis MoM selesai. {$flagsCreated} anomali ditemukan.",
-            'variances' => $variances,
-            'flags_created' => $flagsCreated,
-            'month' => $currentMonth->translatedFormat('F Y'),
-        ]);
-    }
-
     public function review(Request $request, $id)
     {
         $flag = AnomalyFlag::findOrFail($id);
+
         $flag->update([
             'is_reviewed' => true,
             'is_dismissed' => $request->boolean('dismiss', false),
+            'review_note' => $request->input('review_note'),
         ]);
+
         return back();
     }
 }

@@ -36,7 +36,7 @@ const variantStyles = {
                 <div class="absolute inset-0 bg-plum/25 backdrop-blur-sm" />
 
                 <!-- Modal -->
-                <div class="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-rose-100/60 overflow-hidden animate-modal-in">
+                <div class="relative w-full max-w-sm sm:max-w-md bg-white rounded-2xl shadow-2xl border border-rose-100/60 overflow-hidden animate-modal-in mx-2">
                     <!-- Body -->
                     <div class="p-6 text-center">
                         <!-- Icon -->

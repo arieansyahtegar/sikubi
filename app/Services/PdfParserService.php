@@ -14,7 +14,11 @@ class PdfParserService
     public function extractText(string $filePath): string
     {
         try {
-            $parser = new Parser();
+            $config = new \Smalot\PdfParser\Config();
+            // Bypass "Secured pdf file" error for PDFs that only have Owner passwords
+            $config->setIgnoreEncryption(true);
+            
+            $parser = new Parser([], $config);
             $pdf = $parser->parseFile($filePath);
             $text = $pdf->getText();
 
