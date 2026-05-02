@@ -136,24 +136,30 @@ class AnomalyDetectionService
             // Flag if outgoing exceeds incoming (paying more than received)
             if ($totalOut > $totalIn && $totalOut >= 1_000_000) {
                 $excess = $totalOut - $totalIn;
-                $representativeTx = $outgoingTxByParty[$party]->sortByDesc('amount')->first();
+                $txCollection = $outgoingTxByParty[$party];
+                $representativeTx = $txCollection->sortByDesc('amount')->first();
+                $txCount = $txCollection->count();
 
                 $severity = 'MEDIUM';
                 if ($excess >= 50_000_000) $severity = 'HIGH';
                 elseif ($totalIn == 0 && $totalOut >= 10_000_000) $severity = 'HIGH';
 
+                $txCountNote = $txCount > 1
+                    ? sprintf(' (total %d transaksi senilai %s)', $txCount, $this->formatRp($totalOut))
+                    : '';
+
                 $reason = $totalIn > 0
                     ? sprintf(
-                        'Pengeluaran ke "%s" sebesar %s melebihi pemasukan dari akun tersebut (%s). Selisih: %s.',
+                        'Pengeluaran ke "%s"%s melebihi pemasukan dari akun tersebut (%s). Selisih: %s.',
                         $party,
-                        $this->formatRp($totalOut),
+                        $txCountNote,
                         $this->formatRp($totalIn),
                         $this->formatRp($excess)
                     )
                     : sprintf(
-                        'Pengeluaran ke "%s" sebesar %s tanpa ada pemasukan dari akun tersebut. Perlu verifikasi tujuan.',
+                        'Pengeluaran ke "%s"%s tanpa ada pemasukan dari akun tersebut. Perlu verifikasi tujuan.',
                         $party,
-                        $this->formatRp($totalOut)
+                        $txCountNote
                     );
 
                 $anomalies[] = [
@@ -183,44 +189,79 @@ class AnomalyDetectionService
     }
 
     /**
-     * Normalize transaction description to extract sender/counterparty name.
-     * Strips common prefixes like "TRSF", "TRANSFER", "BCA", etc.
+     * Normalize transaction description to extract the actual person/account name.
+     * Uses pattern-specific extraction for each bank transaction format.
      */
     private function normalizeSender(string $description): string
     {
         $desc = strtoupper(trim($description));
 
-        // Remove common bank transaction prefixes
-        $prefixes = [
-            'TRSF E-BANKING DB', 'TRSF E-BANKING CR', 'TRSF E-BANKING',
-            'SWITCHING DB', 'SWITCHING CR', 'SWITCHING',
-            'TARIKAN ATM', 'SETORAN TUNAI',
-            'TRANSFER DR', 'TRANSFER CR', 'TRANSFER',
-            'TRSF DB', 'TRSF CR', 'TRSF',
-            'KR OTOMATIS', 'DB OTOMATIS',
-            'BIAYA ADM', 'BUNGA',
-            'FLEKSI BCA', 'BCA',
-        ];
-
-        foreach ($prefixes as $prefix) {
-            if (str_starts_with($desc, $prefix)) {
-                $desc = trim(substr($desc, strlen($prefix)));
-                break;
-            }
+        // Skip system/fee transactions
+        $skipPatterns = ['BIAYA ADM', 'BUNGA', 'PAJAK', 'TARIKAN ATM', 'SETORAN TUNAI', 'BIAYA TXN'];
+        foreach ($skipPatterns as $skip) {
+            if (str_contains($desc, $skip)) return 'LAINNYA';
         }
 
-        // Remove date patterns (DD/MM, DD-MM-YYYY, etc.)
-        $desc = preg_replace('/\d{2}[\/\-]\d{2}([\/\-]\d{2,4})?/', '', $desc);
+        $name = null;
 
-        // Remove reference numbers (long digit sequences)
-        $desc = preg_replace('/\b\d{6,}\b/', '', $desc);
+        // Pattern 1: TRSF E-BANKING CR/DB ddmm/FTxxx/WSxxxxx amount NAME
+        // e.g. "TRSF E-BANKING CR 0203/FTSCY/WS95031 675000.00 SYAMSUL ARIFIN"
+        if (preg_match('/TRSF E-BANKING (?:CR|DB)\s+\S+\s+[\d,.]+\s+(.+)/i', $desc, $m)) {
+            $name = trim($m[1]);
+        }
 
-        // Clean up
-        $desc = preg_replace('/\s+/', ' ', trim($desc));
+        // Pattern 1b: TRSF E-BANKING CR/DB ddmm/FTFVA/WSxxxxx ref/MERCHANT ID
+        // e.g. "TRSF E-BANKING DB 0203/FTFVA/WS95051 12208/SHOPEEPAY 1334321011"
+        if (!$name && preg_match('/TRSF E-BANKING (?:CR|DB)\s+\S+\s+\d+\/(\S+)\s/i', $desc, $m)) {
+            $name = trim($m[1]);
+        }
 
-        // Extract first meaningful part (usually the name)
-        $parts = explode(' ', $desc);
-        $name = implode(' ', array_slice($parts, 0, min(3, count($parts))));
+        // Pattern 2: BI-FAST CR/DB TRANSFER DR/KE bankcode NAME [KBB]
+        // e.g. "BI-FAST CR TRANSFER DR 002 RUT ITA PUJINARO S"
+        // e.g. "BI-FAST DB TRANSFER KE 535 NESYA TANTRI REFYA KBB"
+        if (!$name && preg_match('/BI-FAST\s+(?:CR|DB)\s+TRANSFER\s+(?:DR|KE)\s+\d+\s+(.+)/i', $desc, $m)) {
+            $name = trim($m[1]);
+        }
+
+        // Pattern 3: SWITCHING CR/DB TRF DR/KE bankcode NAME [KBB|NEW BRI MOB]
+        // e.g. "SWITCHING CR TRF DR 002 RUT ITA PUJINARO S NEW BRI MOB"
+        // e.g. "SWITCHING DB TRF KE 451 SUSKANTI KBB"
+        if (!$name && preg_match('/SWITCHING\s+(?:CR|DB)\s+TRF\s+(?:DR|KE)\s+\d+\s+(.+)/i', $desc, $m)) {
+            $name = trim($m[1]);
+        }
+
+        // Pattern 4: KR OTOMATIS ... @Name
+        // e.g. "KR OTOMATIS NTRF@... @Bayar biaya ... @AFR Atik Fadlilah"
+        if (!$name && preg_match('/KR OTOMATIS.*@([A-Z][A-Z\s]+)$/i', $desc, $m)) {
+            $name = trim($m[1]);
+        }
+
+        // Pattern 5: Generic TRSF DB/CR NAME
+        if (!$name && preg_match('/TRSF\s+(?:CR|DB)\s+(.+)/i', $desc, $m)) {
+            $name = trim($m[1]);
+        }
+
+        // Pattern 6: TRANSFER DR/CR NAME
+        if (!$name && preg_match('/TRANSFER\s+(?:DR|CR|KE)\s+(.+)/i', $desc, $m)) {
+            $name = trim($m[1]);
+        }
+
+        if (!$name) return 'LAINNYA';
+
+        // Clean up: remove trailing bank suffixes
+        $name = preg_replace('/\s+(KBB|NEW BRI MOB|MOBILE BANKING|M-BANKING|BCA MOBILE|MANDIRI)\s*$/i', '', $name);
+
+        // Remove any trailing commas/dots
+        $name = rtrim($name, '.,; ');
+
+        // Remove reference numbers at the start (e.g. "200001012_81385713 25733...")
+        $name = preg_replace('/^[\d_]+\s+[\d]+\s+/', '', $name);
+
+        // Remove amounts embedded in name (e.g. leftover from bad parsing)
+        $name = preg_replace('/\b\d{1,3}([.,]\d{3})*([.,]\d{2})?\b/', '', $name);
+
+        // Clean whitespace
+        $name = preg_replace('/\s+/', ' ', trim($name));
 
         return $name ?: 'LAINNYA';
     }

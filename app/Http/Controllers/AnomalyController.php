@@ -25,7 +25,7 @@ class AnomalyController extends Controller
         }
 
         if ($type !== 'ALL') {
-            $query->where('detection_method', $type);
+            $query->where('detection_method', 'LIKE', $type . '%');
         }
 
         $anomalies = $query->paginate(20)->withQueryString();
