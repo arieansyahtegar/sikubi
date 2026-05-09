@@ -60,7 +60,14 @@ class CsvImportController extends Controller
 
             try {
                 if ($ext === 'pdf') {
-                    $rawContent = $pdfParser->extractText($file->getRealPath());
+                    set_time_limit(120); // PDF processing may take longer
+                    $rawText = $pdfParser->extractText($file->getRealPath());
+                    $pdfConverter = app(\App\Services\PdfToCsvService::class);
+                    $result = $pdfConverter->convertToCsv($rawText);
+                    $rawContent = $result['csv'];
+                    if (empty($rawContent)) {
+                        throw new \Exception("Tidak ada transaksi yang dapat diekstrak dari PDF.");
+                    }
                 } else {
                     $rawContent = file_get_contents($file->getRealPath());
                 }
