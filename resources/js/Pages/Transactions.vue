@@ -41,9 +41,19 @@ function onDateUpdate(val) {
     }
 }
 
+const isExporting = ref(false);
+
 function exportCsv() {
+    isExporting.value = true;
     const params = new URLSearchParams(buildParams());
-    window.open('/transactions/export?' + params.toString(), '_blank');
+    const url = '/transactions/export?' + params.toString();
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', '');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => { isExporting.value = false; }, 2000);
 }
 
 function formatCurrency(v) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v); }
@@ -59,31 +69,35 @@ function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: '
                     <h1 class="page-title text-lg sm:text-2xl">Transaksi</h1>
                     <p class="text-xs sm:text-sm text-surface-600 mt-0.5">Riwayat seluruh transaksi keuangan</p>
                 </div>
-                <button v-if="isAdmin" @click="exportCsv" class="btn-secondary text-xs gap-1.5 w-full sm:w-auto justify-center sm:justify-start">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12M12 16.5V3" /></svg>
-                    Export CSV
+                <button v-if="isAdmin" @click="exportCsv" :disabled="isExporting" class="btn-secondary text-xs gap-1.5 w-full sm:w-auto justify-center sm:justify-start">
+                    <svg v-if="isExporting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12M12 16.5V3" /></svg>
+                    {{ isExporting ? 'Memproses...' : 'Export CSV' }}
                 </button>
             </div>
 
-            <div class="glass-card p-4 sm:p-6">
+            <div class="glass-card p-4 sm:p-5">
                 <!-- Filters -->
-                <div class="space-y-3 mb-6">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
-                        <input v-model="search" @keyup.enter="applyFilters" type="text" placeholder="Cari deskripsi..." class="input-field !py-1.5 sm:!py-2" />
-                        <select v-model="type" @change="applyFilters" class="input-field !py-1.5 sm:!py-2">
+                <div class="space-y-2.5 mb-5">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <input v-model="search" @keyup.enter="applyFilters" type="text" placeholder="Cari deskripsi..." class="filter-field flex-1 min-w-[140px]" />
+                        <select v-model="type" @change="applyFilters" class="filter-field !w-auto min-w-[120px]">
                             <option value="">Semua Tipe</option>
                             <option value="DEBIT">Pemasukan</option>
                             <option value="CREDIT">Pengeluaran</option>
                         </select>
-                        <select v-if="categories?.length" v-model="categoryId" @change="applyFilters" class="input-field !py-1.5 sm:!py-2">
+                        <select v-if="categories?.length" v-model="categoryId" @change="applyFilters" class="filter-field !w-auto min-w-[130px]">
                             <option value="">Semua Kategori</option>
                             <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
                         </select>
-                        <select v-if="accounts?.length" v-model="accountId" @change="applyFilters" class="input-field !py-1.5 sm:!py-2">
+                        <select v-if="accounts?.length" v-model="accountId" @change="applyFilters" class="filter-field !w-auto min-w-[130px]">
                             <option value="">Semua Rekening</option>
                             <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
                         </select>
-                        <button @click="applyFilters" class="btn-primary w-full h-full text-xs sm:text-sm !py-1.5 sm:!py-2">Cari</button>
+                        <button @click="applyFilters" class="btn-primary text-xs !py-1.5 !px-4">Cari</button>
                     </div>
                     <DateRangePicker :initial-from="filters?.date_from" :initial-to="filters?.date_to" @update="onDateUpdate" />
                 </div>

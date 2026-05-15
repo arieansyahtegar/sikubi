@@ -5,6 +5,7 @@ use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\CsvImportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UserController;
@@ -26,7 +27,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Settings — read-only for Direktur, CRUD for Admin (enforced in controller)
     Route::get('/settings/categories', [SettingsController::class, 'categories'])->name('settings.categories');
-    Route::get('/settings/rules', [SettingsController::class, 'rules'])->name('settings.rules');
+
+    // Reports & Exports
+    Route::get('/reports/recap', [ReportController::class, 'recapCsv'])->name('reports.recap');
+    Route::get('/reports/print', [ReportController::class, 'printRecap'])->name('reports.print');
 });
 
 // ── Admin Keuangan only ──
@@ -58,8 +62,6 @@ Route::middleware(['auth', 'verified', 'role:ADMIN_KEUANGAN'])->group(function (
     Route::post('/settings/categories', [SettingsController::class, 'storeCategory'])->name('settings.categories.store');
     Route::delete('/settings/categories/{category}', [SettingsController::class, 'destroyCategory'])->name('settings.categories.destroy');
     Route::patch('/settings/categories/{category}/approve', [SettingsController::class, 'approveCategory'])->name('settings.categories.approve');
-    Route::post('/settings/rules', [SettingsController::class, 'storeRule'])->name('settings.rules.store');
-    Route::delete('/settings/rules/{rule}', [SettingsController::class, 'destroyRule'])->name('settings.rules.destroy');
 });
 
 // ── Direktur only ──

@@ -90,7 +90,7 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
                         </h1>
                         <p class="text-xs sm:text-sm text-surface-600 mt-0.5 truncate">Panel operasional keuangan PT Bigenmi</p>
                     </div>
-                    <select v-model="selectedAccountId" class="input-field !py-1.5 sm:!py-2 !w-auto !pr-8 max-w-full sm:max-w-[200px] flex-shrink-0">
+                    <select v-model="selectedAccountId" class="filter-field !w-auto !pr-8 max-w-full sm:max-w-[200px] flex-shrink-0">
                         <option value="">Semua Rekening</option>
                         <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
                     </select>
