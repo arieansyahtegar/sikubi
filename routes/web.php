@@ -30,6 +30,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Reports & Exports
     Route::get('/reports/recap', [ReportController::class, 'recapCsv'])->name('reports.recap');
+    Route::get('/reports/recap/excel', [ReportController::class, 'recapExcel'])->name('reports.excel');
     Route::get('/reports/print', [ReportController::class, 'printRecap'])->name('reports.print');
 });
 
@@ -51,6 +52,7 @@ Route::middleware(['auth', 'verified', 'role:ADMIN_KEUANGAN'])->group(function (
     // Bank Accounts
     Route::get('/accounts', [BankAccountController::class, 'index'])->name('accounts.index');
     Route::post('/accounts', [BankAccountController::class, 'store'])->name('accounts.store');
+    Route::put('/accounts/{account}', [BankAccountController::class, 'update'])->name('accounts.update');
     Route::delete('/accounts/{account}', [BankAccountController::class, 'destroy'])->name('accounts.destroy');
 
     // Anomalies

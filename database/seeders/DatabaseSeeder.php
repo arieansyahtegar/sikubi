@@ -52,6 +52,7 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Withdrawal (WD)', 'type' => 'CREDIT', 'color' => '#a855f7', 'icon' => 'banknotes', 'sort_order' => 16],
             ['name' => 'Pajak', 'type' => 'CREDIT', 'color' => '#dc2626', 'icon' => 'document', 'sort_order' => 17],
             ['name' => 'Logistik', 'type' => 'CREDIT', 'color' => '#84cc16', 'icon' => 'truck', 'sort_order' => 18],
+            ['name' => 'Online Shop', 'type' => 'CREDIT', 'color' => '#06b6d4', 'icon' => 'cart', 'sort_order' => 20],
             ['name' => 'Pengeluaran Lainnya', 'type' => 'CREDIT', 'color' => '#78716c', 'icon' => 'dots', 'sort_order' => 19],
         ];
         $categoryMap = [];

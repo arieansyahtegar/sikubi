@@ -7,6 +7,9 @@ import RoverAnimation from '@/Components/RoverAnimation.vue';
 const props = defineProps({
     accounts: Array,
     transactions: { type: Array, default: null },
+    income_breakdown: { type: Array, default: () => [] },
+    expense_breakdown: { type: Array, default: () => [] },
+    anomalies: { type: Array, default: () => [] },
     summary: { type: Object, default: null },
     filters: Object,
 });
@@ -59,6 +62,7 @@ function printPage() {
 }
 
 const isExporting = ref(false);
+const isExportingExcel = ref(false);
 
 function downloadCsv() {
     if (!hasReport.value) return;
@@ -75,6 +79,23 @@ function downloadCsv() {
     link.click();
     document.body.removeChild(link);
     setTimeout(() => { isExporting.value = false; }, 2000);
+}
+
+function downloadExcel() {
+    if (!hasReport.value) return;
+    isExportingExcel.value = true;
+    const params = new URLSearchParams({
+        month: selectedMonth.value,
+        year: selectedYear.value,
+    });
+    if (selectedAccountId.value) params.set('account_id', selectedAccountId.value);
+    const link = document.createElement('a');
+    link.href = '/reports/recap/excel?' + params.toString();
+    link.setAttribute('download', '');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => { isExportingExcel.value = false; }, 2000);
 }
 
 function getLastDay() {
@@ -163,7 +184,17 @@ function formatCurrency(v) {
                             <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12M12 16.5V3" />
                             </svg>
-                            {{ isExporting ? 'Memproses...' : 'Download CSV' }}
+                            {{ isExporting ? 'CSV...' : 'CSV' }}
+                        </button>
+                        <button @click="downloadExcel" :disabled="isExportingExcel" class="btn-secondary text-xs gap-1.5 !text-emerald-700 hover:!text-emerald-800" id="btn-excel">
+                            <svg v-if="isExportingExcel" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <svg v-else class="w-4 h-4 !text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            {{ isExportingExcel ? 'Excel...' : 'Excel' }}
                         </button>
                     </div>
                     <button @click="printPage" class="btn-primary text-xs gap-1.5" id="btn-print">
@@ -178,7 +209,7 @@ function formatCurrency(v) {
                 <div class="print-content" id="report-content">
                     <!-- Report Header -->
                     <div class="report-header">
-                        <div class="report-logo-section">
+                        <div class="header-top-row">
                             <img src="/images/bigenmi-logo.png" alt="Bigenmi" class="report-logo" />
                             <div class="report-company">
                                 <h2>SIKUBI</h2>
@@ -187,65 +218,136 @@ function formatCurrency(v) {
                         </div>
                         <h1 class="report-title">
                             Laporan Pendapatan &amp; Pengeluaran<br />
-                            Pada Bulan {{ summary.month_label }}
+                            <span class="report-subtitle">Periode Bulan {{ summary.month_label }}</span>
                         </h1>
                     </div>
 
-                    <!-- Transaction Table -->
-                    <div class="report-table-wrapper">
-                        <table class="report-table">
-                            <thead>
-                                <tr>
-                                    <th class="th-no">No</th>
-                                    <th class="th-date">Tanggal</th>
-                                    <th class="th-desc">Deskripsi</th>
-                                    <th class="th-type">Jenis</th>
-                                    <th class="th-amount">Jumlah</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-if="!transactions.length">
-                                    <td colspan="5" class="empty-row">Tidak ada transaksi untuk bulan ini.</td>
-                                </tr>
-                                <tr v-for="tx in transactions" :key="tx.no">
-                                    <td class="td-no">{{ tx.no }}</td>
-                                    <td class="td-date">{{ tx.date }}</td>
-                                    <td class="td-desc">{{ tx.description }}</td>
-                                    <td :class="['td-type', tx.type_raw === 'DEBIT' ? 'type-income' : 'type-expense']">
-                                        {{ tx.type }}
-                                    </td>
-                                    <td :class="['td-amount', tx.type_raw === 'DEBIT' ? 'amount-income' : 'amount-expense']">
-                                        {{ formatCurrency(tx.amount) }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <!-- Dashboard Metrics (Page 1) -->
+                    <div class="recap-cards-grid">
+                        <div class="recap-card income-card">
+                            <div class="card-title">TOTAL PENDAPATAN</div>
+                            <div class="card-value">{{ formatCurrency(summary.total_debit) }}</div>
+                            <div class="card-subtitle">{{ summary.total_debit_count }} Transaksi Masuk</div>
+                        </div>
+                        <div class="recap-card expense-card">
+                            <div class="card-title">TOTAL PENGELUARAN</div>
+                            <div class="card-value">{{ formatCurrency(summary.total_credit) }}</div>
+                            <div class="card-subtitle">{{ summary.total_credit_count }} Transaksi Keluar</div>
+                        </div>
+                        <div class="recap-card balance-card" :class="summary.balance >= 0 ? 'balance-positive' : 'balance-negative'">
+                            <div class="card-title">SISA SALDO BERSIH (NET)</div>
+                            <div class="card-value">{{ formatCurrency(summary.balance) }}</div>
+                            <div class="card-subtitle">Arus Kas Bersih Bulan Ini</div>
+                        </div>
                     </div>
 
-                    <!-- Summary -->
-                    <div class="report-summary">
-                        <h3 class="summary-title">
-                            Total Pendapatan &amp; Pengeluaran Pada Bulan {{ summary.month_label }}
-                        </h3>
-                        <table class="summary-table">
-                            <thead>
-                                <tr>
-                                    <th>Bulan</th>
-                                    <th>Pendapatan</th>
-                                    <th>Pengeluaran</th>
-                                    <th>Total Jumlah Sisa</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>{{ summary.month_label }}</td>
-                                    <td class="amount-income">{{ formatCurrency(summary.total_debit) }}</td>
-                                    <td class="amount-expense">{{ formatCurrency(summary.total_credit) }}</td>
-                                    <td class="amount-balance">{{ formatCurrency(summary.balance) }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <!-- Category Share Progress Columns (The Visual Graphics Equivalent) -->
+                    <div class="breakdown-section">
+                        <h3 class="section-title">Visualisasi Kontribusi Kategori &amp; Kegiatan</h3>
+                        <div class="breakdown-columns">
+                            <!-- Income breakdown -->
+                            <div class="breakdown-col">
+                                <h4 class="col-title title-income">Pendapatan Berdasarkan Kategori</h4>
+                                <div v-if="!income_breakdown.length" class="empty-breakdown">Tidak ada data pendapatan.</div>
+                                <div v-else class="breakdown-list">
+                                    <div v-for="item in income_breakdown" :key="item.name" class="breakdown-item">
+                                        <div class="item-header">
+                                            <span class="item-name">{{ item.name }}</span>
+                                            <span class="item-values">
+                                                <span class="item-percent">{{ Math.round((item.amount / (summary.total_debit || 1)) * 100) }}%</span>
+                                                <span class="item-amount">({{ formatCurrency(item.amount) }})</span>
+                                            </span>
+                                        </div>
+                                        <div class="progress-bar-bg">
+                                            <div class="progress-bar-fill fill-income" :style="{ width: Math.round((item.amount / (summary.total_debit || 1)) * 100) + '%', backgroundColor: item.color }"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Expense breakdown -->
+                            <div class="breakdown-col">
+                                <h4 class="col-title title-expense">Pengeluaran Berdasarkan Kategori</h4>
+                                <div v-if="!expense_breakdown.length" class="empty-breakdown">Tidak ada data pengeluaran.</div>
+                                <div v-else class="breakdown-list">
+                                    <div v-for="item in expense_breakdown" :key="item.name" class="breakdown-item">
+                                        <div class="item-header">
+                                            <span class="item-name">{{ item.name }}</span>
+                                            <span class="item-values">
+                                                <span class="item-percent">{{ Math.round((item.amount / (summary.total_credit || 1)) * 100) }}%</span>
+                                                <span class="item-amount">({{ formatCurrency(item.amount) }})</span>
+                                            </span>
+                                        </div>
+                                        <div class="progress-bar-bg">
+                                            <div class="progress-bar-fill fill-expense" :style="{ width: Math.round((item.amount / (summary.total_credit || 1)) * 100) + '%', backgroundColor: item.color }"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Anomaly Detection Report -->
+                    <div class="anomaly-report-section">
+                        <h3 class="section-title">Hasil Deteksi &amp; Analisis Anomali Sistem</h3>
+                        
+                        <div v-if="!anomalies.length" class="anomaly-safe-card">
+                            <span class="safe-icon">✓</span>
+                            <div class="safe-text-wrapper">
+                                <strong>Sistem Keuangan Aman (100% Bersih)</strong>
+                                <p>Tidak ditemukan adanya transaksi anomali, transfer mencurigakan, atau lonjakan nominal yang tidak wajar pada periode bulan ini.</p>
+                            </div>
+                        </div>
+                        
+                        <div v-else class="anomaly-danger-section">
+                            <div class="anomaly-warning-card">
+                                <span class="warning-icon">⚠</span>
+                                <div class="warning-text-wrapper">
+                                    <strong>Ditemukan {{ anomalies.length }} Bendera Anomali Keuangan (Telah Ditinjau &amp; Kroscek oleh Admin)</strong>
+                                    <p>Terdapat beberapa mutasi yang memerlukan peninjauan khusus dan telah ditinjau serta diverifikasi langsung oleh Admin Keuangan.</p>
+                                </div>
+                            </div>
+                            
+                            <table class="anomaly-print-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 12%;">Tanggal</th>
+                                        <th style="width: 28%;">Transaksi &amp; Rekening</th>
+                                        <th style="width: 30%;">Analisis Deteksi Sistem</th>
+                                        <th style="width: 30%;">Status &amp; Keterangan Admin</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="flag in anomalies" :key="flag.id">
+                                        <td class="td-date">{{ flag.date }}</td>
+                                        <td>
+                                            <div class="font-bold text-plum">{{ flag.description }}</div>
+                                            <div class="text-xs text-surface-500 mt-0.5">Rekening: {{ flag.account }}</div>
+                                            <div class="text-xs font-extrabold text-rose-gold mt-0.5">Nominal: {{ formatCurrency(flag.amount) }}</div>
+                                        </td>
+                                        <td>
+                                            <span class="anomaly-badge badge-high mb-1 inline-block">HIGH THREAT</span>
+                                            <div class="text-xs text-rose-950 font-medium leading-relaxed">{{ flag.reason }}</div>
+                                        </td>
+                                        <td>
+                                            <div v-if="flag.is_reviewed" class="flex flex-col gap-1">
+                                                <span class="status-badge badge-verified inline-block w-fit">✓ TERVERIFIKASI AMAN</span>
+                                                <div class="text-xs font-semibold text-emerald-900 leading-normal" v-if="flag.review_note">
+                                                    Alasan: <span class="italic font-normal">"{{ flag.review_note }}"</span>
+                                                </div>
+                                                <div class="text-[10px] text-surface-500 italic" v-else>Disetujui tanpa catatan khusus.</div>
+                                            </div>
+                                            <div v-else class="flex flex-col gap-1">
+                                                <span class="status-badge badge-pending inline-block w-fit">🚨 BELUM DITINJAU</span>
+                                                <div class="text-[10px] text-rose-800 italic">Memerlukan verifikasi nota oleh Admin Keuangan.</div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
 
                     <!-- Footer -->
                     <div class="report-footer">
@@ -277,45 +379,59 @@ function formatCurrency(v) {
 
 /* Report Header */
 .report-header {
-    text-align: center;
     margin-bottom: 2rem;
     padding-bottom: 1.5rem;
     border-bottom: 2px solid #7A2D58;
 }
 
-.report-logo-section {
+.header-top-row {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
-    gap: 12px;
-    margin-bottom: 1.2rem;
+    margin-bottom: 1.5rem;
 }
 
 .report-logo {
-    width: 40px;
-    height: 40px;
+    height: 38px;
+    width: auto;
     object-fit: contain;
 }
 
+.report-company {
+    text-align: right;
+}
+
 .report-company h2 {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 800;
     color: #7A2D58;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    margin: 0;
     line-height: 1.2;
 }
 
 .report-company p {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     color: #8B5E6B;
-    margin-top: 1px;
+    margin: 2px 0 0 0;
+    font-weight: 500;
 }
 
 .report-title {
-    font-size: 1.15rem;
+    text-align: center;
+    font-size: 1.25rem;
     font-weight: 700;
     color: #7A2D58;
-    line-height: 1.5;
+    line-height: 1.4;
+    margin-top: 1rem;
+}
+
+.report-subtitle {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #8B5E6B;
+    display: inline-block;
+    margin-top: 4px;
 }
 
 /* Transaction Table */
@@ -330,6 +446,7 @@ function formatCurrency(v) {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.85rem;
+    border: 1px solid #E8C4D1;
 }
 
 .report-table thead {
@@ -344,6 +461,7 @@ function formatCurrency(v) {
     font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.4px;
+    border: 1px solid #E8C4D1;
 }
 
 .th-no { width: 50px; text-align: center; }
@@ -353,7 +471,7 @@ function formatCurrency(v) {
 
 .report-table td {
     padding: 9px 14px;
-    border-bottom: 1px solid #F3E8EE;
+    border: 1px solid #E8C4D1;
     color: #4A2035;
 }
 
@@ -380,44 +498,287 @@ function formatCurrency(v) {
     font-style: italic;
 }
 
-/* Summary Section */
-.report-summary {
-    background: linear-gradient(135deg, rgba(183, 110, 121, 0.04), rgba(201, 169, 110, 0.03));
-    border: 1px solid #E8C4D1;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
+/* Recap Cards Grid */
+.recap-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
 }
 
-.summary-title {
-    text-align: center;
-    font-size: 0.95rem;
+.recap-card {
+    border-radius: 12px;
+    padding: 1.2rem;
+    border: 1px solid #E8C4D1;
+    background: linear-gradient(135deg, #ffffff, rgba(183, 110, 121, 0.02));
+    box-shadow: 0 1px 3px rgba(183, 110, 121, 0.05);
+}
+
+.income-card {
+    border-left: 4px solid #059669;
+}
+
+.expense-card {
+    border-left: 4px solid #DC2626;
+}
+
+.balance-card {
+    border-left: 4px solid #7A2D58;
+}
+
+.balance-positive {
+    background: linear-gradient(135deg, #ffffff, rgba(5, 150, 105, 0.03));
+    border-left-color: #059669;
+}
+
+.balance-negative {
+    background: linear-gradient(135deg, #ffffff, rgba(220, 38, 38, 0.03));
+    border-left-color: #DC2626;
+}
+
+.card-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #8B5E6B;
+    letter-spacing: 0.8px;
+    margin-bottom: 0.4rem;
+}
+
+.card-value {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #4A2035;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.card-subtitle {
+    font-size: 0.72rem;
+    color: #8B5E6B;
+    margin-top: 0.3rem;
+    font-weight: 500;
+}
+
+/* Category Breakdown Progress Columns */
+.breakdown-section {
+    margin-bottom: 2rem;
+}
+
+.section-title {
+    font-size: 1rem;
     font-weight: 700;
     color: #7A2D58;
     margin-bottom: 1rem;
+    border-left: 3px solid #7A2D58;
+    padding-left: 8px;
+    line-height: 1.2;
 }
 
-.summary-table {
+.breakdown-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+}
+
+.breakdown-col {
+    background: rgba(183, 110, 121, 0.02);
+    border: 1px solid rgba(183, 110, 121, 0.15);
+    border-radius: 12px;
+    padding: 1.2rem;
+}
+
+.col-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px dashed rgba(183, 110, 121, 0.15);
+}
+
+.title-income { color: #059669; }
+.title-expense { color: #DC2626; }
+
+.empty-breakdown {
+    text-align: center;
+    padding: 1.5rem 0;
+    font-size: 0.8rem;
+    color: #8B5E6B;
+    font-style: italic;
+}
+
+.breakdown-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.breakdown-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.item-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.item-name {
+    color: #4A2035;
+}
+
+.item-values {
+    color: #8B5E6B;
+}
+
+.item-percent {
+    font-weight: 700;
+    color: #4A2035;
+    margin-right: 4px;
+}
+
+.progress-bar-bg {
+    height: 8px;
+    background-color: rgba(183, 110, 121, 0.08);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+/* Anomaly Section */
+.anomaly-report-section {
+    margin-bottom: 2rem;
+}
+
+.anomaly-safe-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(5, 150, 105, 0.03);
+    border: 1px solid rgba(5, 150, 105, 0.15);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+}
+
+.safe-icon {
+    font-size: 1.35rem;
+    color: #059669;
+    font-weight: 800;
+}
+
+.safe-text-wrapper strong {
+    font-size: 0.85rem;
+    color: #059669;
+    display: block;
+}
+
+.safe-text-wrapper p {
+    font-size: 0.75rem;
+    color: #047857;
+    margin-top: 2px;
+}
+
+.anomaly-warning-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(220, 38, 38, 0.03);
+    border: 1px solid rgba(220, 38, 38, 0.15);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1rem;
+}
+
+.warning-icon {
+    font-size: 1.35rem;
+    color: #DC2626;
+    font-weight: 800;
+}
+
+.warning-text-wrapper strong {
+    font-size: 0.85rem;
+    color: #DC2626;
+    display: block;
+}
+
+.warning-text-wrapper p {
+    font-size: 0.75rem;
+    color: #B91C1C;
+    margin-top: 2px;
+}
+
+.anomaly-print-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.85rem;
-}
-
-.summary-table th {
-    padding: 10px 14px;
-    background: rgba(183, 110, 121, 0.08);
-    color: #7A2D58;
-    font-weight: 600;
-    text-align: center;
-    border: 1px solid #E8C4D1;
     font-size: 0.78rem;
+    border: 1px solid #E8C4D1;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
-.summary-table td {
-    padding: 10px 14px;
-    text-align: center;
+.anomaly-print-table th {
+    padding: 8px 12px;
+    background: rgba(220, 38, 38, 0.05);
+    color: #B91C1C;
+    font-weight: 700;
+    text-align: left;
     border: 1px solid #E8C4D1;
-    font-weight: 600;
+}
+
+.anomaly-print-table td {
+    padding: 8px 12px;
+    border: 1px solid #E8C4D1;
+    color: #4A2035;
+}
+
+.anomaly-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-align: center;
+}
+
+.badge-high {
+    background-color: rgba(220, 38, 38, 0.1);
+    color: #DC2626;
+}
+
+.badge-medium {
+    background-color: rgba(217, 119, 6, 0.1);
+    color: #D97706;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-verified {
+    background-color: rgba(5, 150, 105, 0.1);
+    color: #059669;
+}
+
+.badge-pending {
+    background-color: rgba(220, 38, 38, 0.1);
+    color: #DC2626;
+}
+
+.page-break-title {
+    margin-top: 2.5rem;
 }
 
 /* Footer */
@@ -427,6 +788,7 @@ function formatCurrency(v) {
     border-top: 1px solid #E8C4D1;
     color: #8B5E6B;
     font-size: 0.75rem;
+    margin-top: 2rem;
 }
 
 /* ═══════════════════════════════════════
@@ -434,42 +796,136 @@ function formatCurrency(v) {
    ═══════════════════════════════════════ */
 
 @media print {
+    @page {
+        size: A4 portrait;
+        margin: 10mm 12mm 10mm 12mm;
+    }
+
+    /* Hide layout chrome elements */
+    aside,
+    header,
     .no-print {
         display: none !important;
     }
 
+    /* Reset layout parent heights and overflows to print the entire page */
+    html,
+    body,
+    #app,
+    #app > div,
+    .flex-1,
+    main {
+        overflow: visible !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: #ffffff !important;
+    }
+
     .print-content {
-        border: none;
-        border-radius: 0;
-        padding: 0;
-        box-shadow: none;
-        margin: 0;
+        display: block !important;
+        border: none !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        background: transparent !important;
+        width: 100% !important;
     }
 
     .report-table-wrapper {
         border: 1px solid #333;
+        overflow: visible !important;
+    }
+
+    .report-table {
+        page-break-inside: auto;
+        border: 1px solid #333333 !important;
+        border-collapse: collapse !important;
     }
 
     .report-table thead {
-        background: #333 !important;
+        display: table-header-group !important;
+        background: #333333 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
 
     .report-table th {
         color: white !important;
+        border: 1px solid #333333 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
 
-    .report-summary {
+    .report-table td {
+        border: 1px solid #333333 !important;
+    }
+
+    .report-table tr {
+        page-break-inside: avoid !important;
+        page-break-after: auto !important;
+    }
+
+    .detailed-ledger-section {
+        page-break-before: always !important;
+    }
+
+    .progress-bar-bg {
+        background-color: #f3f4f6 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
 
-    .summary-table th {
+    .progress-bar-fill {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+    }
+
+    .anomaly-safe-card {
+        background: #f0fdf4 !important;
+        border: 1px solid #bbf7d0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .anomaly-warning-card {
+        background: #fef2f2 !important;
+        border: 1px solid #fecaca !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .anomaly-badge {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .badge-high {
+        background-color: #fee2e2 !important;
+        color: #dc2626 !important;
+    }
+
+    .badge-medium {
+        background-color: #fef3c7 !important;
+        color: #d97706 !important;
+    }
+
+    .status-badge {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .badge-verified {
+        background-color: #d1fae5 !important;
+        color: #059669 !important;
+    }
+
+    .badge-pending {
+        background-color: #fee2e2 !important;
+        color: #dc2626 !important;
     }
 
     .type-income, .amount-income {
@@ -482,6 +938,53 @@ function formatCurrency(v) {
         color: #DC2626 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+    }
+
+    .report-footer {
+        page-break-inside: avoid;
+    }
+}
+</style>
+
+<style>
+@media print {
+    /* Eliminate browser default headers and footers (date, title, URL) */
+    @page {
+        size: A4 portrait;
+        margin: 0 !important;
+    }
+
+    /* Globally hide layout chrome, sidebars, headers, and navigation bars */
+    aside,
+    header,
+    nav,
+    footer,
+    .no-print {
+        display: none !important;
+    }
+
+    /* Reset overflow and heights on root wrappers to avoid print clipping */
+    html,
+    body,
+    #app,
+    #app > div,
+    .flex-1,
+    main {
+        overflow: visible !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: #ffffff !important;
+    }
+
+    /* Re-inject custom page margins on the print container */
+    .print-content {
+        margin: 0 !important;
+        padding: 12mm 15mm 12mm 15mm !important;
+        box-sizing: border-box !important;
+        width: 100% !important;
     }
 }
 </style>

@@ -32,9 +32,11 @@ class TransactionController extends Controller
     {
         $request->validate([
             'category_id' => 'nullable|exists:categories,id',
+            'description' => 'required|string|max:1000',
         ]);
 
         $transaction->update([
+            'description' => $request->input('description'),
             'category_id' => $request->input('category_id'),
             'classification_method' => $request->input('category_id') ? 'MANUAL' : 'UNCLASSIFIED',
             'confidence_score' => $request->input('category_id') ? 1.0 : 0,
