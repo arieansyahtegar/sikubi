@@ -33,14 +33,14 @@ function buildOption() {
         tooltip: {
             trigger: 'axis',
             backgroundColor: '#fff',
-            borderColor: '#FDD5DF',
+            borderColor: '#FFD0D6',
             borderWidth: 1,
-            textStyle: { color: '#3D1F2B', fontSize: 12 },
+            textStyle: { color: '#2C1929', fontSize: 12 },
             confine: true,
             formatter: (params) => {
                 let s = `<div style="font-weight:600;margin-bottom:4px">${params[0].axisValue}</div>`;
                 params.forEach(p => {
-                    let c = typeof p.color === 'string' ? p.color : (p.seriesName === 'Pemasukan' ? '#10b981' : (p.seriesName === 'Pengeluaran' ? '#e11d48' : '#B76E79'));
+                    let c = typeof p.color === 'string' ? p.color : (p.seriesName === 'Pemasukan' ? '#10b981' : (p.seriesName === 'Pengeluaran' ? '#e11d48' : '#E8637A'));
                     s += `<div style="display:flex;align-items:center;gap:6px;margin:2px 0">
                         <span style="width:8px;height:8px;border-radius:50%;background:${c}"></span>
                         <span>${p.seriesName}: <b>${formatRp(p.value)}</b></span></div>`;
@@ -50,7 +50,7 @@ function buildOption() {
         },
         legend: {
             bottom: 0,
-            textStyle: { color: '#8C7D6E', fontSize: isMobile ? 10 : 11 },
+            textStyle: { color: '#8A7E70', fontSize: isMobile ? 10 : 11 },
             itemWidth: isMobile ? 10 : 12, itemHeight: isMobile ? 10 : 12, itemGap: isMobile ? 8 : 16,
         },
         grid: {
@@ -63,9 +63,9 @@ function buildOption() {
         xAxis: {
             type: 'category',
             data: d.dates,
-            axisLine: { lineStyle: { color: '#E8DDD1' } },
+            axisLine: { lineStyle: { color: '#DDD2C6' } },
             axisLabel: {
-                color: '#8C7D6E',
+                color: '#8A7E70',
                 fontSize: isMobile ? 9 : 10,
                 rotate: isMobile ? 55 : (dateCount > 30 ? 45 : 0),
                 interval: isMobile ? Math.max(0, Math.floor(dateCount / 6) - 1) : 'auto',
@@ -74,8 +74,8 @@ function buildOption() {
         },
         yAxis: {
             type: 'value',
-            splitLine: { lineStyle: { color: '#F5EDE3', type: 'dashed' } },
-            axisLabel: { color: '#8C7D6E', fontSize: isMobile ? 9 : 10, formatter: (v) => formatRp(v) },
+            splitLine: { lineStyle: { color: '#EDE4DB', type: 'dashed' } },
+            axisLabel: { color: '#8A7E70', fontSize: isMobile ? 9 : 10, formatter: (v) => formatRp(v) },
         },
         series: [
             {
@@ -94,8 +94,8 @@ function buildOption() {
             },
             {
                 name: 'Arus Bersih', type: 'line', data: d.netData,
-                lineStyle: { color: '#B76E79', width: 2 },
-                itemStyle: { color: '#B76E79' },
+                lineStyle: { color: '#E8637A', width: 2 },
+                itemStyle: { color: '#E8637A' },
                 symbol: isMobile ? 'none' : 'circle', symbolSize: 4,
                 smooth: true,
             },

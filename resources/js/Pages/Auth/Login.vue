@@ -35,7 +35,7 @@ function submit() {
                 <div class="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-white border border-rose-200 shadow-lg mb-4 p-3">
                     <img src="/images/bigenmi-logo.png" alt="Bigenmi" class="w-full h-full object-contain" />
                 </div>
-                <h1 class="text-3xl font-display font-bold text-plum tracking-tight">SIKUBI</h1>
+                <h1 class="text-3xl font-sans font-semibold text-plum tracking-tight">SIKUBI</h1>
                 <p class="text-sm text-surface-600 mt-1 font-body">Sistem Keuangan Bigenmi</p>
                 <div class="w-12 h-0.5 bg-gradient-rose mx-auto mt-3 rounded-full" />
             </div>

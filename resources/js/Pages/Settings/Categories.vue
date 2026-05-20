@@ -10,7 +10,7 @@ const canManage = page.props.permissions?.canManageSettings;
 const showForm = ref(false);
 const showHelp = ref(false);
 const selectedAccountId = ref(props.filters?.account_id || '');
-const form = useForm({ name: '', type: 'CREDIT', color: '#B76E79', icon: 'folder', bank_account_id: '' });
+const form = useForm({ name: '', type: 'CREDIT', color: '#E8637A', icon: 'folder', bank_account_id: '' });
 
 const showDeleteModal = ref(false);
 const deleteTarget = ref(null);

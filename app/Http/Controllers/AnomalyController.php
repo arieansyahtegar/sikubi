@@ -6,6 +6,7 @@ use App\Models\AnomalyFlag;
 use App\Models\BankAccount;
 use App\Models\Transaction;
 use App\Services\AnomalyDetectionService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -92,12 +93,114 @@ class AnomalyController extends Controller
     {
         $flag = AnomalyFlag::findOrFail($id);
 
+        $needsLeader = $request->boolean('needs_leader_action', false);
+        if (!$needsLeader && $request->has('review_note')) {
+            $note = strtolower($request->input('review_note') ?? '');
+            $needsLeader = str_contains($note, 'pimpinan') || str_contains($note, 'tindak');
+        }
+
         $flag->update([
             'is_reviewed' => true,
             'is_dismissed' => $request->boolean('dismiss', false),
+            'needs_leader_action' => $needsLeader,
             'review_note' => $request->input('review_note'),
         ]);
 
         return back();
+    }
+
+    /**
+     * Show anomalies page for Pimpinan.
+     */
+    public function pimpinanIndex(Request $request)
+    {
+        $accountId = $request->input('account_id');
+
+        // Resolve date range
+        [$dateFrom, $dateTo] = $this->resolveDateRange($request);
+
+        $query = AnomalyFlag::with([
+            'transaction' => fn($q) => $q->with('bankAccount:id,bank_name,account_alias')
+        ])->whereHas('transaction', function ($q) use ($accountId, $dateFrom, $dateTo) {
+            $q->forAccount($accountId);
+            if ($dateFrom) $q->where('transaction_date', '>=', $dateFrom);
+            if ($dateTo) $q->where('transaction_date', '<=', $dateTo);
+        })->orderByDesc('created_at');
+
+        // Stats calculation
+        $totalAnomalies = (clone $query)->get();
+        $unreviewedCount = $totalAnomalies->filter(fn($a) => !$a->is_reviewed)->count();
+        
+        $needsLeaderActionCount = $totalAnomalies->filter(function($a) {
+            if (!$a->is_reviewed || $a->is_dismissed) return false;
+            if ($a->leader_reviewed_at !== null) return false; // Already resolved by leader!
+            return $a->needs_leader_action;
+        })->count();
+
+        $reviewedCount = $totalAnomalies->filter(function($a) {
+            if (!$a->is_reviewed || $a->is_dismissed) return false;
+            return !$a->needs_leader_action || ($a->needs_leader_action && $a->leader_reviewed_at !== null);
+        })->count();
+
+        // Paginate anomalies
+        $anomalies = $query->paginate(20)->withQueryString();
+
+        return Inertia::render('AnomaliesPimpinan', [
+            'anomalies' => $anomalies,
+            'accounts' => BankAccount::all(),
+            'filters' => [
+                'account_id' => $accountId,
+                'date_from' => $dateFrom?->toDateString(),
+                'date_to' => $dateTo?->toDateString(),
+                'preset' => $request->input('preset'),
+            ],
+            'stats' => [
+                'unreviewedCount' => $unreviewedCount,
+                'needsLeaderActionCount' => $needsLeaderActionCount,
+                'reviewedCount' => $reviewedCount,
+                'totalCount' => $totalAnomalies->count(),
+            ],
+        ]);
+    }
+
+    /**
+     * Submit leader authorization follow-up decision.
+     */
+    public function leaderAction(Request $request, $id)
+    {
+        $flag = AnomalyFlag::findOrFail($id);
+
+        $flag->update([
+            'is_approved_by_leader' => $request->boolean('approve', true),
+            'leader_note' => $request->input('leader_note'),
+            'leader_reviewed_at' => now(),
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Resolve date range from request params (preset or custom).
+     */
+    private function resolveDateRange(Request $request): array
+    {
+        $preset = $request->input('preset');
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+
+        if ($preset) {
+            return match ($preset) {
+                'this_month' => [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()],
+                'last_month' => [Carbon::now()->subMonth()->startOfMonth(), Carbon::now()->subMonth()->endOfMonth()],
+                'last_3_months' => [Carbon::now()->subMonths(3)->startOfMonth(), Carbon::now()->endOfMonth()],
+                'this_year' => [Carbon::now()->startOfYear(), Carbon::now()->endOfYear()],
+                default => [null, null],
+            };
+        }
+
+        return [
+            $dateFrom ? Carbon::parse($dateFrom)->startOfDay() : null,
+            $dateTo ? Carbon::parse($dateTo)->endOfDay() : null,
+        ];
     }
 }

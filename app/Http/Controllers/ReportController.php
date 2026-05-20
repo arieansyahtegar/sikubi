@@ -25,7 +25,7 @@ class ReportController extends Controller
         $year  = $request->input('year');
         $accountId = $request->input('account_id');
 
-        $accounts = BankAccount::all(['id', 'bank_name', 'account_alias']);
+        $accounts = BankAccount::all(['id', 'bank_name', 'account_alias', 'account_number']);
 
         // If no month/year selected, show selector only
         if (!$month || !$year) {

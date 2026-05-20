@@ -18,7 +18,7 @@ function formatRp(val) {
 }
 
 const PALETTE = [
-    '#B76E79', '#C9A96E', '#E3607F', '#34d399', '#60a5fa',
+    '#E8637A', '#C49A4A', '#F4899A', '#34d399', '#60a5fa',
     '#f59e0b', '#a78bfa', '#f472b6', '#2dd4bf', '#fb923c',
 ];
 
@@ -29,7 +29,7 @@ function getContainerWidth() {
 function buildOption() {
     const d = (props.data || []).map((item, i) => ({
         ...item,
-        color: item.name === 'Belum Diklasifikasi' ? '#CBD5E1' : (item.color === '#B76E79' ? PALETTE[i % PALETTE.length] : (item.color || PALETTE[i % PALETTE.length])),
+        color: item.name === 'Belum Diklasifikasi' ? '#CBD5E1' : (item.color === '#E8637A' ? PALETTE[i % PALETTE.length] : (item.color || PALETTE[i % PALETTE.length])),
     }));
     const total = d.reduce((s, i) => s + (i.value || 0), 0);
     const hasMultiple = d.length > 1;
@@ -40,9 +40,9 @@ function buildOption() {
         tooltip: {
             trigger: 'item',
             backgroundColor: '#fff',
-            borderColor: '#FDD5DF',
+            borderColor: '#FFD0D6',
             borderWidth: 1,
-            textStyle: { color: '#3D1F2B', fontSize: 12 },
+            textStyle: { color: '#2C1929', fontSize: 12 },
             formatter: (p) => `<b>${p.name}</b><br/>${formatRp(p.value)} (${p.percent}%)`,
             confine: true,
         },
@@ -50,14 +50,14 @@ function buildOption() {
             orient: 'horizontal',
             bottom: 0,
             left: 'center',
-            textStyle: { color: '#655849', fontSize: 10 },
+            textStyle: { color: '#635850', fontSize: 10 },
             itemWidth: 8, itemHeight: 8, itemGap: 6,
             formatter: (name) => name.length > 14 ? name.substring(0, 14) + '…' : name,
         } : {
             orient: 'vertical',
             right: 10,
             top: 'center',
-            textStyle: { color: '#655849', fontSize: 11 },
+            textStyle: { color: '#635850', fontSize: 11 },
             itemWidth: 10, itemHeight: 10, itemGap: 8,
             formatter: (name) => name.length > 20 ? name.substring(0, 20) + '…' : name,
         },
@@ -73,8 +73,8 @@ function buildOption() {
                 position: 'center',
                 formatter: () => `{total|${formatRp(total)}}\n{sub|Total}`,
                 rich: {
-                    total: { fontSize: isMobile ? 13 : 15, fontWeight: 'bold', color: '#3D1F2B', lineHeight: isMobile ? 18 : 22 },
-                    sub: { fontSize: isMobile ? 10 : 11, color: '#8C7D6E', lineHeight: isMobile ? 14 : 18 },
+                    total: { fontSize: isMobile ? 13 : 15, fontWeight: 'bold', color: '#2C1929', lineHeight: isMobile ? 18 : 22 },
+                    sub: { fontSize: isMobile ? 10 : 11, color: '#8A7E70', lineHeight: isMobile ? 14 : 18 },
                 },
             },
             emphasis: {

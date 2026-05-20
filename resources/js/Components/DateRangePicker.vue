@@ -121,17 +121,17 @@ function formatDate(d) {
 <style>
 /* Override VueDatePicker theme to match Bigenmi palette */
 .dp__theme_light {
-    --dp-primary-color: #B76E79;
+    --dp-primary-color: #E8637A;
     --dp-primary-text-color: #fff;
-    --dp-secondary-color: #FDD5DF;
-    --dp-border-color: #F5EDE3;
-    --dp-menu-border-color: #FDD5DF;
-    --dp-hover-color: #FFF5F7;
-    --dp-hover-text-color: #3D1F2B;
+    --dp-secondary-color: #FFD0D6;
+    --dp-border-color: #EDE4DB;
+    --dp-menu-border-color: #FFD0D6;
+    --dp-hover-color: #FFF5F6;
+    --dp-hover-text-color: #2C1929;
     --dp-background-color: #fff;
-    --dp-text-color: #3D1F2B;
+    --dp-text-color: #2C1929;
     --dp-border-radius: 12px;
-    --dp-font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --dp-font-family: 'Outfit', system-ui, sans-serif;
     --dp-font-size: 0.8rem;
 }
 </style>

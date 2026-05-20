@@ -41,6 +41,11 @@ const years = Array.from({ length: currentYear - 2019 }, (_, i) => (currentYear 
 
 const hasReport = computed(() => props.transactions !== null && props.summary !== null);
 
+const selectedAccount = computed(() => {
+    if (!props.accounts || !selectedAccountId.value) return null;
+    return props.accounts.find(acc => String(acc.id) === String(selectedAccountId.value));
+});
+
 function showReport() {
     if (!selectedMonth.value || !selectedYear.value) return;
     router.get('/reports/print', {
@@ -220,6 +225,20 @@ function formatCurrency(v) {
                             Laporan Pendapatan &amp; Pengeluaran<br />
                             <span class="report-subtitle">Periode Bulan {{ summary.month_label }}</span>
                         </h1>
+                        <div class="report-bank-meta">
+                            <span v-if="selectedAccount" class="bank-info-badge">
+                                <svg class="w-3.5 h-3.5 inline-block align-text-top mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.33l-7.5-5-7.5 5V21" />
+                                </svg>
+                                Rekening: {{ selectedAccount.bank_name }} — {{ selectedAccount.account_number }} <span v-if="selectedAccount.account_alias">({{ selectedAccount.account_alias }})</span>
+                            </span>
+                            <span v-else class="bank-info-badge">
+                                <svg class="w-3.5 h-3.5 inline-block align-text-top mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.33l-7.5-5-7.5 5V21" />
+                                </svg>
+                                Rekening: Semua Rekening
+                            </span>
+                        </div>
                     </div>
 
                     <!-- Dashboard Metrics (Page 1) -->
@@ -432,6 +451,23 @@ function formatCurrency(v) {
     color: #8B5E6B;
     display: inline-block;
     margin-top: 4px;
+}
+
+.report-bank-meta {
+    text-align: center;
+    margin-top: 0.75rem;
+}
+
+.bank-info-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.85rem;
+    background-color: rgba(122, 45, 88, 0.05);
+    border: 1px solid rgba(122, 45, 88, 0.12);
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #7A2D58;
 }
 
 /* Transaction Table */
@@ -880,6 +916,14 @@ function formatCurrency(v) {
     }
 
     .progress-bar-fill {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .bank-info-badge {
+        background-color: rgba(122, 45, 88, 0.05) !important;
+        border: 1px solid rgba(122, 45, 88, 0.15) !important;
+        color: #7A2D58 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }

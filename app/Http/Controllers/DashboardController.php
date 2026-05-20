@@ -25,15 +25,31 @@ class DashboardController extends Controller
         if ($dateFrom) $summaryQuery->where('transaction_date', '>=', $dateFrom);
         if ($dateTo) $summaryQuery->where('transaction_date', '<=', $dateTo);
 
+        $user = $request->user();
+
         $totalDebit = (clone $summaryQuery)->debit()->sum('amount');
         $totalCredit = (clone $summaryQuery)->credit()->sum('amount');
         $debitCount = (clone $summaryQuery)->debit()->count();
         $creditCount = (clone $summaryQuery)->credit()->count();
-        $anomalyCount = AnomalyFlag::whereHas('transaction', function ($q) use ($accountId, $dateFrom, $dateTo) {
+
+        $anomalyQuery = AnomalyFlag::whereHas('transaction', function ($q) use ($accountId, $dateFrom, $dateTo) {
             $q->forAccount($accountId);
             if ($dateFrom) $q->where('transaction_date', '>=', $dateFrom);
             if ($dateTo) $q->where('transaction_date', '<=', $dateTo);
-        })->where('is_dismissed', false)->count();
+        })->where('is_dismissed', false);
+
+        if ($user->isDirektur()) {
+            $anomalyCount = (clone $anomalyQuery)->where(function($q) {
+                $q->where('is_reviewed', false)
+                  ->orWhere(function($sub) {
+                      $sub->where('needs_leader_action', true)
+                          ->whereNull('leader_reviewed_at');
+                  });
+            })->count();
+        } else {
+            $anomalyCount = (clone $anomalyQuery)->where('is_reviewed', false)->count();
+        }
+
         $unclassifiedCount = (clone $summaryQuery)->where('classification_method', 'UNCLASSIFIED')->count();
 
         // Cashflow chart data — use date range or default

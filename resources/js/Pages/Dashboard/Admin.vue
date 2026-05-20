@@ -85,7 +85,7 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
             <div class="glass-card p-4 sm:p-6 bg-gradient-to-r from-rose-50 via-white to-champagne-50 border-rose-200/40">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div class="min-w-0">
-                        <h1 class="text-lg sm:text-2xl font-display font-bold text-plum truncate">
+                        <h1 class="text-lg sm:text-2xl font-display font-normal text-plum truncate">
                             Selamat {{ greeting }}, {{ user?.name?.split(' ')[0] || 'Admin' }} 👋
                         </h1>
                         <p class="text-xs sm:text-sm text-surface-600 mt-0.5 truncate">Panel operasional keuangan PT Bigenmi</p>
@@ -104,7 +104,7 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <div class="glass-card p-4 sm:p-5 accent-left-emerald group hover:shadow-card-hover transition-all duration-300">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wider">Pemasukan</span>
+                        <span class="text-[10px] sm:text-xs font-medium text-surface-500 uppercase tracking-wider">Pemasukan</span>
                         <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
                             <svg class="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.281m5.94 2.28l-2.28 5.941" /></svg>
                         </div>
@@ -114,7 +114,7 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
                 </div>
                 <div class="glass-card p-4 sm:p-5 accent-left-red group hover:shadow-card-hover transition-all duration-300">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wider">Pengeluaran</span>
+                        <span class="text-[10px] sm:text-xs font-medium text-surface-500 uppercase tracking-wider">Pengeluaran</span>
                         <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-red-50 flex items-center justify-center">
                             <svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6L9 12.75l4.306-4.307a11.95 11.95 0 015.814 5.519l2.74 1.22m0 0l-5.94 2.281m5.94-2.28l-2.28-5.941" /></svg>
                         </div>
@@ -124,7 +124,7 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
                 </div>
                 <div class="glass-card p-4 sm:p-5 accent-left-rose group hover:shadow-card-hover transition-all duration-300">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wider">Arus Kas Bersih</span>
+                        <span class="text-[10px] sm:text-xs font-medium text-surface-500 uppercase tracking-wider">Arus Kas Bersih</span>
                         <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-50 flex items-center justify-center">
                             <svg class="w-4 h-4 sm:w-5 sm:h-5 text-rose-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         </div>
@@ -134,7 +134,7 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
                 </div>
                 <div class="glass-card p-4 sm:p-5 accent-left-amber group hover:shadow-card-hover transition-all duration-300">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wider">Anomali</span>
+                        <span class="text-[10px] sm:text-xs font-medium text-surface-500 uppercase tracking-wider">Anomali</span>
                         <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-50 flex items-center justify-center">
                             <svg class="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
                         </div>
@@ -157,7 +157,7 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
                                         <h3 class="section-title text-sm">Import Terbaru</h3>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <Link href="/import" class="text-xs text-rose-gold hover:text-rose-600 font-semibold">Lihat →</Link>
+                                        <Link href="/import" class="text-xs text-rose-gold hover:text-rose-600 font-medium">Lihat →</Link>
                                         <button @click="toggleWidget('imports')" class="p-1 text-surface-400 hover:text-plum rounded transition-colors">
                                             <svg :class="['w-4 h-4 transition-transform', isCollapsed('imports') ? '-rotate-90' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
                                         </button>
@@ -173,7 +173,7 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
                                                 <p class="text-sm font-medium text-plum truncate">{{ batch.file_name }}</p>
                                                 <p class="text-[10px] text-surface-500">{{ batch.success_rows }} berhasil · {{ formatDatetime(batch.imported_at) }}</p>
                                             </div>
-                                            <span :class="['text-[10px] font-semibold px-2 py-0.5 rounded-lg', batch.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600']">
+                                            <span :class="['text-[10px] font-medium px-2 py-0.5 rounded-lg', batch.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600']">
                                                 {{ batch.status === 'COMPLETED' ? 'Selesai' : batch.status }}
                                             </span>
                                         </div>
@@ -190,7 +190,7 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
                                         <h3 class="section-title text-sm">Anomali Perlu Ditinjau</h3>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <Link href="/anomalies" class="text-xs text-rose-gold hover:text-rose-600 font-semibold">Lihat →</Link>
+                                        <Link href="/anomalies" class="text-xs text-rose-gold hover:text-rose-600 font-medium">Lihat →</Link>
                                         <button @click="toggleWidget('anomalies')" class="p-1 text-surface-400 hover:text-plum rounded transition-colors">
                                             <svg :class="['w-4 h-4 transition-transform', isCollapsed('anomalies') ? '-rotate-90' : '']" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
                                         </button>
@@ -206,7 +206,7 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
                                                 <p class="text-sm text-plum truncate">{{ flag.transaction?.description }}</p>
                                                 <p class="text-[10px] text-surface-500">Skor: {{ (flag.score * 100).toFixed(0) }}%</p>
                                             </div>
-                                            <p :class="['text-xs font-bold', flag.transaction?.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
+                                            <p :class="['text-xs font-semibold', flag.transaction?.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
                                                 {{ formatCurrency(flag.transaction?.amount || 0) }}
                                             </p>
                                         </div>
@@ -228,7 +228,7 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
                                 </div>
                                 <div class="flex items-center gap-1 bg-cream-200/60 rounded-xl p-1">
                                     <button v-for="g in granularities" :key="g.value"
-                                        :class="['px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold rounded-lg transition-all', selectedGranularity === g.value ? 'bg-white text-plum shadow-soft' : 'text-surface-600 hover:text-plum']"
+                                        :class="['px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium rounded-lg transition-all', selectedGranularity === g.value ? 'bg-white text-plum shadow-soft' : 'text-surface-600 hover:text-plum']"
                                         @click="selectedGranularity = g.value"
                                     >{{ g.label }}</button>
                                 </div>
@@ -280,7 +280,7 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
                                                 <p class="text-sm text-plum truncate">{{ tx.description }}</p>
                                                 <p class="text-xs text-surface-500">{{ formatDate(tx.transaction_date) }}<span v-if="tx.category" class="ml-1">· {{ tx.category.name }}</span></p>
                                             </div>
-                                            <p :class="['text-sm font-bold whitespace-nowrap', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
+                                            <p :class="['text-sm font-semibold whitespace-nowrap', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
                                                 {{ tx.type === 'DEBIT' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
                                             </p>
                                         </div>

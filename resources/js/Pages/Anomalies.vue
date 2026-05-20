@@ -17,6 +17,7 @@ const showReviewModal = ref(false);
 const reviewingFlag = ref(null);
 const reviewNote = ref('');
 const isDismissing = ref(false);
+const needsLeaderAction = ref(false);
 
 // Template notes
 const noteTemplates = [
@@ -48,6 +49,7 @@ function openReview(flag, dismiss = false) {
     reviewingFlag.value = flag;
     isDismissing.value = dismiss;
     reviewNote.value = '';
+    needsLeaderAction.value = false;
     showReviewModal.value = true;
 }
 
@@ -55,6 +57,7 @@ function submitReview() {
     if (!reviewingFlag.value) return;
     router.patch(`/anomalies/${reviewingFlag.value.id}`, {
         dismiss: isDismissing.value,
+        needs_leader_action: needsLeaderAction.value,
         review_note: reviewNote.value || null,
     }, {
         preserveScroll: true,
@@ -68,6 +71,11 @@ function submitReview() {
 
 function selectTemplate(tpl) {
     reviewNote.value = tpl;
+    if (tpl.toLowerCase().includes('pimpinan') || tpl.toLowerCase().includes('tindak')) {
+        needsLeaderAction.value = true;
+    } else {
+        needsLeaderAction.value = false;
+    }
 }
 
 function formatCurrency(v) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v); }
@@ -185,7 +193,11 @@ function subtypeLabel(method) {
 
                             <!-- Review note (if reviewed) -->
                             <div v-if="flag.is_reviewed && flag.review_note" class="mt-2 text-xs bg-blue-50 border border-blue-200 rounded-lg p-2.5 text-blue-700">
-                                📝 <strong>Catatan:</strong> {{ flag.review_note }}
+                                📝 <strong>Catatan Admin:</strong> {{ flag.review_note }}
+                            </div>
+                            <!-- Leader review note (if reviewed by Leader) -->
+                            <div v-if="flag.leader_reviewed_at" class="mt-2 text-xs rounded-lg p-2.5 border" :class="flag.is_approved_by_leader ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'">
+                                👤 <strong>Catatan Pimpinan ({{ flag.is_approved_by_leader ? 'Disetujui' : 'Ditolak' }}):</strong> {{ flag.leader_note || '-' }}
                             </div>
                         </div>
 
@@ -200,6 +212,11 @@ function subtypeLabel(method) {
                         </div>
                         <div v-else class="flex items-center gap-2 flex-shrink-0">
                             <span v-if="flag.is_dismissed" class="badge text-[10px] bg-surface-100 text-surface-500 border border-surface-200">⚠ Diabaikan</span>
+                            <template v-else-if="flag.needs_leader_action">
+                                <span v-if="!flag.leader_reviewed_at" class="badge text-[10px] bg-amber-500 text-white border border-amber-600 font-bold py-0.5 px-2 rounded-lg">⚠️ Menunggu Pimpinan</span>
+                                <span v-else-if="flag.is_approved_by_leader" class="badge text-[10px] bg-emerald-500 text-white border border-emerald-600 font-bold py-0.5 px-2 rounded-lg">✓ Disetujui Pimpinan</span>
+                                <span v-else class="badge text-[10px] bg-rose-600 text-white border border-rose-700 font-bold py-0.5 px-2 rounded-lg">❌ Ditolak Pimpinan</span>
+                            </template>
                             <span v-else class="badge-green text-[10px]">✓ Ditinjau</span>
                         </div>
                     </div>
@@ -244,6 +261,22 @@ function subtypeLabel(method) {
                                     :class="['text-[10px] px-2.5 py-1 rounded-lg border transition-all', reviewNote === tpl ? 'bg-rose-50 border-rose-300 text-plum font-semibold' : 'bg-cream-100 border-surface-200 text-surface-600 hover:border-rose-300']"
                                 >{{ tpl }}</button>
                             </div>
+                        </div>
+
+                        <!-- Explicit Minta Tindak Lanjut Pimpinan -->
+                        <div v-if="!isDismissing" class="mb-4 bg-rose-50/40 border border-rose-200/40 rounded-xl p-3 flex items-start gap-2.5">
+                            <input 
+                                type="checkbox" 
+                                id="needs_leader" 
+                                v-model="needsLeaderAction" 
+                                class="mt-1 rounded border-rose-300 text-rose-600 focus:ring-rose-500 w-4 h-4 cursor-pointer"
+                            />
+                            <label for="needs_leader" class="cursor-pointer select-none">
+                                <span class="text-xs font-bold text-rose-700 block">Minta Tindak Lanjut Pimpinan</span>
+                                <span class="text-[10px] text-rose-600 block mt-0.5 leading-normal">
+                                    Centang jika transaksi ini memerlukan peninjauan khusus atau otorisasi langsung oleh Direktur (Pimpinan).
+                                </span>
+                            </label>
                         </div>
 
                         <!-- Custom Note Input -->
