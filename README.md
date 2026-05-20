@@ -1,59 +1,224 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sikubi — Sistem Analisis & Deteksi Anomali Transaksi Keuangan
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## Ringkasan Eksekutif
 
-## About Laravel
+**Sikubi** adalah sistem web berbasis Laravel 12 yang dirancang untuk mengelola, mengklasifikasi, dan menganalisis mutasi rekening bank secara otomatis. Sistem ini mendukung **import mutasi dari BCA dan BRI**, melakukan **klasifikasi transaksi otomatis**, serta **mendeteksi anomali keuangan** untuk membantu pengambilan keputusan manajemen.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Fitur Utama
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 1. Dashboard Interaktif
+- **KPI Keuangan**: Total pemasukan (debit), pengeluaran (kredit), arus kas bersih, jumlah transaksi
+- **Grafik Arus Kas**: Visualisasi harian, bulanan, dan tahunan menggunakan ECharts
+- **Breakdown Kategori**: Distribusi transaksi berdasarkan kategori (pie chart)
+- **Transaksi Terbaru**: Ringkasan 8 transaksi terakhir
+- **Filter Multi-Rekening**: Pilih rekening bank spesifik untuk analisis
 
-## Learning Laravel
+### 2. Import Mutasi Bank (CSV)
+- **Auto-detect format**: Otomatis mendeteksi format BCA atau BRI
+- **Parsing cerdas**: Menangani berbagai format tanggal, kolom, dan encoding
+- **Deduplikasi**: Mencegah duplikasi data menggunakan hash SHA-256
+- **Manajemen Batch**: Riwayat import, restore, dan hapus batch
+- **Resolusi Duplikat**: Fitur batch resolve untuk transaksi duplikat
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### 3. Klasifikasi Transaksi Otomatis (4 Tahap)
+| Tahap | Metode | Confidence |
+|-------|--------|------------|
+| 1 | Rule-based (keyword matching) | 1.0 |
+| 2 | Fuzzy pattern matching (Jaccard similarity) | 0.6–0.9 |
+| 3 | Historical KNN (500 transaksi terakhir) | 0.5–0.8 |
+| 4 | Auto-suggestion (buat kategori baru jika keyword muncul 3+ kali) | 0.6 |
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+**Kategori Bawaan**:
+- **Pemasukan**: Penjualan Langsung, Online Shop, Penagihan Piutang, Bunga Bank, Transfer Masuk, Pendapatan Lainnya
+- **Pengeluaran**: Gaji & THR, Admin Bank, Withdrawal, Pajak, Logistik, Pembelian Produk, Biaya Operasional, Online Shop, Reward, Transfer Keluar
 
-## Laravel Sponsors
+### 4. Deteksi Anomali Keuangan
+#### Anomali Pemasukan (Income)
+- **Instant**: Transaksi masuk ≥ Rp 10 juta dalam satu transaksi
+- **Accumulated**: Akumulasi pemasukan dari pengirim yang sama ≥ Rp 10 juta
+- **Severity**: HIGH (≥ Rp 50 juta), MEDIUM (< Rp 50 juta)
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+#### Anomali Pengeluaran (Expense)
+- **Mismatch**: Pengeluaran ke counterparty melebihi pemasukan dari akun tersebut
+- **Threshold**: Minimum Rp 1 juta untuk memicu flag
+- **Severity**: HIGH jika selisih ≥ Rp 50 juta atau tidak ada pemasukan sama sekali
 
-### Premium Partners
+#### Normalisasi Sender
+Sistem mengekstrak nama pengirim/penerima dari deskripsi transaksi bank dengan pattern recognition untuk:
+- TRSF E-BANKING
+- BI-FAST
+- SWITCHING
+- KR OTOMATIS
+- Dan format lainnya
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### 5. Manajemen Rekening Bank
+- CRUD multi-rekening (bank name, account number, alias)
+- Filter analisis per rekening
 
-## Contributing
+### 6. Laporan & Export
+- **CSV Recap**: Rekapitulasi transaksi dalam format CSV
+- **Excel Export**: Export ke format Excel (.xlsx) menggunakan PHPSpreadsheet
+- **Print Recap**: Tampilan cetak untuk laporan
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 7. Manajemen Pengguna & Role
+| Role | Hak Akses |
+|------|-----------|
+| **Admin Keuangan** | Import, edit transaksi, deteksi anomali, review anomali, settings, export laporan |
+| **Direktur** | Dashboard eksekutif, review anomali (leader action), manajemen pengguna |
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Teknologi yang Digunakan
 
-## Security Vulnerabilities
+### Backend
+| Teknologi | Versi | Fungsi |
+|-----------|-------|--------|
+| PHP | 8.2+ | Runtime |
+| Laravel Framework | 12.0 | Web framework |
+| Laravel Breeze | 2.4 | Authentication scaffolding |
+| Laravel Sanctum | 4.0 | API authentication |
+| Inertia.js (Laravel) | 2.0 | Bridge backend-frontend |
+| PHPSpreadsheet | 5.7 | Export Excel |
+| PDFParser | 2.12 | Parsing file PDF |
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Frontend
+| Teknologi | Versi | Fungsi |
+|-----------|-------|--------|
+| Vue.js | 3.4+ | UI framework |
+| Inertia.js (Vue) | 2.0 | SPA without API |
+| Tailwind CSS | 3.2+ / 4.0 | Styling |
+| ECharts / Vue-ECharts | 6.0 / 8.0 | Visualisasi grafik |
+| Vue Datepicker | 12.1 | Date picker component |
+| PapaParse | 5.5 | CSV parsing (client-side) |
+| VueDraggable | 4.1 | Drag & drop |
 
-## License
+### Database & Tools
+| Teknologi | Fungsi |
+|-----------|--------|
+| SQLite (default) / MySQL | Database |
+| Vite | Build tool & dev server |
+| PHPUnit | Testing framework |
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+---
+
+## Struktur Database
+
+| Tabel | Deskripsi |
+|-------|-----------|
+| `users` | Data pengguna (name, email, password, role) |
+| `bank_accounts` | Rekening bank (bank_name, account_number, account_alias) |
+| `categories` | Kategori transaksi (name, type, color, is_suggested) |
+| `classification_rules` | Aturan klasifikasi (pattern, match_type, priority) |
+| `transactions` | Data transaksi (date, description, amount, type, category_id, classification_method, confidence_score) |
+| `import_batches` | Riwayat import (file_name, bank_format, total_rows, success/failed/duplicate rows) |
+| `anomaly_flags` | Flag anomali (score, severity, reason, is_reviewed, is_dismissed, leader_action) |
+| `duplicate_transactions` | Transaksi duplikat yang terdeteksi saat import |
+| `cache_jobs_sessions` | Cache, queue jobs, dan sessions |
+
+---
+
+## Alur Kerja Sistem
+
+```
+1. Admin upload CSV mutasi bank (BCA/BRI)
+        ↓
+2. CsvImportService auto-detect format & parsing
+        ↓
+3. Deduplikasi (SHA-256 hash)
+        ↓
+4. ClassificationService klasifikasi otomatis (4 tahap)
+        ↓
+5. Data tersimpan di tabel transactions
+        ↓
+6. Admin menjalankan deteksi anomali
+        ↓
+7. AnomalyDetectionService scan pemasukan & pengeluaran
+        ↓
+8. Admin review anomali → jika kritis, escalate ke Direktur
+        ↓
+9. Direktur review & approve/reject anomali (leader action)
+        ↓
+10. Export laporan (CSV/Excel/Print)
+```
+
+---
+
+## Instalasi & Konfigurasi
+
+### Persyaratan
+- PHP 8.2+
+- Composer
+- Node.js 18+
+- SQLite atau MySQL
+
+### Langkah Instalasi
+```bash
+# 1. Clone repository
+git clone <repository-url>
+cd Sikubi
+
+# 2. Install dependencies
+composer install
+npm install
+
+# 3. Setup environment
+cp .env.example .env
+php artisan key:generate
+
+# 4. Setup database (SQLite default)
+touch database/database.sqlite
+php artisan migrate
+
+# 5. Build assets
+npm run build
+
+# 6. Jalankan development server
+composer run dev
+```
+
+### Quick Setup (Satu Command)
+```bash
+composer run setup
+```
+
+---
+
+## Endpoint Utama
+
+| Route | Method | Role | Deskripsi |
+|-------|--------|------|-----------|
+| `/dashboard` | GET | All | Dashboard utama |
+| `/transactions` | GET | All | Daftar transaksi |
+| `/import` | GET/POST | Admin | Import CSV |
+| `/anomalies` | GET/POST | Admin | Deteksi & review anomali |
+| `/anomalies/check` | GET | Direktur | Review anomali (pimpinan) |
+| `/reports/recap` | GET | Admin | Export CSV |
+| `/reports/recap/excel` | GET | Admin | Export Excel |
+| `/accounts` | CRUD | Admin | Manajemen rekening |
+| `/settings/categories` | CRUD | Admin | Manajemen kategori |
+| `/users` | CRUD | Direktur | Manajemen pengguna |
+
+---
+
+## Keamanan
+
+- **Authentication**: Laravel Breeze (session-based)
+- **Authorization**: Role middleware (`ADMIN_KEUANGAN`, `DIREKTUR`)
+- **Password**: Bcrypt dengan 12 rounds
+- **CSRF Protection**: Built-in Laravel
+- **Soft Deletes**: Data transaksi tidak terhapus permanen
+
+---
+
+## Pengembang & Lisensi
+
+- **Framework**: Laravel (MIT License)
+- **Sistem ini dikembangkan untuk**: Analisis dan monitoring transaksi keuangan internal
+
+---
+
+## Kontak & Dukungan
+
+Untuk pertanyaan teknis atau pelaporan bug, hubungi tim pengembang.
