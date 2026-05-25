@@ -61,6 +61,7 @@ function bankLabel(rule) {
                 </div>
                 <div class="flex gap-2">
                     <select v-if="accounts?.length" v-model="selectedAccountId" class="input-field !w-auto !pr-8 text-sm !py-2">
+                        <option value="">Semua Rekening</option>
                         <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
                     </select>
                     <button @click="showHelp = !showHelp" class="btn-secondary" title="Bantuan">
@@ -206,9 +207,4 @@ function bankLabel(rule) {
     </AppLayout>
 </template>
 
-<style scoped>
-.slide-up-enter-active { transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-.slide-up-leave-active { transition: all 0.25s cubic-bezier(0.5, 0, 0.75, 0); }
-.slide-up-enter-from { opacity: 0; transform: translateY(16px); }
-.slide-up-leave-to { opacity: 0; transform: translateY(-8px); }
-</style>
+<style scoped></style>

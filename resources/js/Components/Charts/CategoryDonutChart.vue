@@ -7,14 +7,16 @@ import { CanvasRenderer } from 'echarts/renderers';
 
 echarts.use([PieChart, TooltipComponent, LegendComponent, CanvasRenderer]);
 
+const emit = defineEmits(['categoryClick']);
 const props = defineProps({ data: Array });
 const chartRef = ref(null);
 let chart = null;
 
 function formatRp(val) {
+    if (val == null) return 'Rp 0';
     if (val >= 1e9) return 'Rp ' + (val / 1e9).toFixed(1) + 'M';
     if (val >= 1e6) return 'Rp ' + (val / 1e6).toFixed(1) + 'jt';
-    return 'Rp ' + val?.toLocaleString('id-ID');
+    return 'Rp ' + val.toLocaleString('id-ID');
 }
 
 const PALETTE = [
@@ -43,7 +45,7 @@ function buildOption() {
             borderColor: '#FFD0D6',
             borderWidth: 1,
             textStyle: { color: '#2C1929', fontSize: 12 },
-            formatter: (p) => `<b>${p.name}</b><br/>${formatRp(p.value)} (${p.percent}%)`,
+            formatter: (p) => `<b>${p.name}</b><br/>${formatRp(p.value)} (${(p.percent).toFixed(1)}%)`,
             confine: true,
         },
         legend: isMobile ? {
@@ -61,8 +63,8 @@ function buildOption() {
             itemWidth: 10, itemHeight: 10, itemGap: 8,
             formatter: (name) => name.length > 20 ? name.substring(0, 20) + '…' : name,
         },
-        animationDuration: 800,
-        animationEasing: 'cubicInOut',
+        animationDuration: 1000,
+        animationEasing: 'cubicOut',
         series: [{
             type: 'pie',
             radius: isMobile ? ['38%', '62%'] : ['45%', '70%'],
@@ -102,6 +104,12 @@ function initChart() {
     if (chart) chart.dispose();
     chart = echarts.init(chartRef.value);
     chart.setOption(buildOption());
+    chart.on('click', 'series.pie', (params) => {
+        const item = props.data?.[params.dataIndex];
+        if (item && item.category_id != null) {
+            emit('categoryClick', item.category_id);
+        }
+    });
 }
 
 onMounted(() => {
@@ -112,8 +120,8 @@ onMounted(() => {
             resizeObserver = new ResizeObserver(() => {
                 requestAnimationFrame(() => {
                     if (chartRef.value && chartRef.value.clientWidth > 0 && chart) {
-                        chart.setOption(buildOption(), true);
                         chart.resize();
+                        chart.setOption(buildOption(), true);
                     }
                 });
             });
@@ -125,6 +133,13 @@ onMounted(() => {
 watch(() => props.data, () => {
     if (chart) {
         chart.setOption(buildOption(), true);
+        chart.off('click', 'series.pie');
+        chart.on('click', 'series.pie', (params) => {
+            const item = props.data?.[params.dataIndex];
+            if (item && item.category_id != null) {
+                emit('categoryClick', item.category_id);
+            }
+        });
     } else {
         nextTick(initChart);
     }

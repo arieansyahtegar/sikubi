@@ -12,10 +12,13 @@ const chartRef = ref(null);
 let chart = null;
 
 function formatRp(val) {
-    if (val >= 1e9) return 'Rp ' + (val / 1e9).toFixed(1) + 'M';
-    if (val >= 1e6) return 'Rp ' + (val / 1e6).toFixed(1) + 'jt';
-    if (val >= 1e3) return 'Rp ' + (val / 1e3).toFixed(0) + 'rb';
-    return 'Rp ' + val;
+    if (val == null) return 'Rp 0';
+    const abs = Math.abs(val);
+    const sign = val < 0 ? '-' : '';
+    if (abs >= 1e9) return sign + 'Rp ' + (abs / 1e9).toFixed(1) + 'M';
+    if (abs >= 1e6) return sign + 'Rp ' + (abs / 1e6).toFixed(1) + 'jt';
+    if (abs >= 1e3) return sign + 'Rp ' + (abs / 1e3).toFixed(0) + 'rb';
+    return sign + 'Rp ' + abs;
 }
 
 function getContainerWidth() {
@@ -38,6 +41,7 @@ function buildOption() {
             textStyle: { color: '#2C1929', fontSize: 12 },
             confine: true,
             formatter: (params) => {
+                if (!params?.length) return '';
                 let s = `<div style="font-weight:600;margin-bottom:4px">${params[0].axisValue}</div>`;
                 params.forEach(p => {
                     let c = typeof p.color === 'string' ? p.color : (p.seriesName === 'Pemasukan' ? '#10b981' : (p.seriesName === 'Pengeluaran' ? '#e11d48' : '#E8637A'));
@@ -80,16 +84,12 @@ function buildOption() {
         series: [
             {
                 name: 'Pemasukan', type: 'bar', data: d.debitData,
-                itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                    { offset: 0, color: '#34d399' }, { offset: 1, color: '#10b981' }
-                ]), borderRadius: [4, 4, 0, 0] },
+                itemStyle: { color: '#10b981', borderRadius: [4, 4, 0, 0] },
                 barMaxWidth: isMobile ? 14 : 24,
             },
             {
                 name: 'Pengeluaran', type: 'bar', data: d.creditData,
-                itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                    { offset: 0, color: '#fb7185' }, { offset: 1, color: '#e11d48' }
-                ]), borderRadius: [4, 4, 0, 0] },
+                itemStyle: { color: '#e11d48', borderRadius: [4, 4, 0, 0] },
                 barMaxWidth: isMobile ? 14 : 24,
             },
             {
@@ -100,8 +100,8 @@ function buildOption() {
                 smooth: true,
             },
         ],
-        animationDuration: 800,
-        animationEasing: 'cubicInOut',
+        animationDuration: 1000,
+        animationEasing: 'cubicOut',
     };
 }
 
@@ -122,8 +122,8 @@ onMounted(() => {
             resizeObserver = new ResizeObserver(() => {
                 requestAnimationFrame(() => {
                     if (chartRef.value && chartRef.value.clientWidth > 0 && chart) {
-                        chart.setOption(buildOption(), true);
                         chart.resize();
+                        chart.setOption(buildOption(), true);
                     }
                 });
             });
@@ -132,10 +132,11 @@ onMounted(() => {
     });
 });
 
-watch(() => props.data, () => {
+watch(() => props.data, (val) => {
     if (chart) {
         chart.setOption(buildOption(), true);
-    } else {
+        nextTick(() => chart?.resize());
+    } else if (val) {
         nextTick(initChart);
     }
 }, { deep: true });
@@ -145,8 +146,17 @@ onBeforeUnmount(() => {
     chart?.dispose();
     chart = null;
 });
+
+const hasData = computed(() => {
+    const d = props.data;
+    return d?.dates?.length > 0 && (d.debitData?.some(v => v) || d.creditData?.some(v => v));
+});
 </script>
 
 <template>
-    <div ref="chartRef" class="w-full h-full min-h-[240px]"></div>
+    <div v-if="hasData" ref="chartRef" class="w-full h-full min-h-[240px]"></div>
+    <div v-else class="w-full h-full min-h-[240px] flex items-center justify-center text-surface-400 text-sm select-none">
+        Belum ada data transaksi
+    </div>
 </template>
+

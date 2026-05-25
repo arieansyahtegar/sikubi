@@ -231,7 +231,9 @@ function executeForceDelete(batch = null) {
 function executeMultipleForceDelete() {
     if (selectedTrashed.value.length === 0) return;
 
-    router.post(route('import.forceDestroyBatch'), {
+    router.post('/import/force-batch', {
+
+
         ids: selectedTrashed.value
     }, {
         preserveScroll: true,
@@ -605,8 +607,7 @@ function formatCurrency(v) {
 </template>
 
 <style scoped>
-.slide-up-enter-active { transition: all 0.3s ease-out; }
-.slide-up-leave-active { transition: all 0.2s ease-in; }
-.slide-up-enter-from { opacity: 0; transform: translateY(16px); }
-.slide-up-leave-to { opacity: 0; transform: translateY(-8px); }
+.expand-enter-active { transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1); overflow: hidden; max-height: 1200px; }
+.expand-leave-active { transition: opacity 0.2s cubic-bezier(0.5, 0, 0.75, 0), max-height 0.3s cubic-bezier(0.5, 0, 0.75, 0); overflow: hidden; max-height: 1200px; }
+.expand-enter-from, .expand-leave-to { max-height: 0 !important; opacity: 0; padding-top: 0 !important; padding-bottom: 0 !important; margin-top: 0 !important; margin-bottom: 0 !important; }
 </style>

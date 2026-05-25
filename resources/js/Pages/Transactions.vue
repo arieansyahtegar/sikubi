@@ -10,7 +10,7 @@ const isAdmin = page.props.auth?.user?.role === 'ADMIN_KEUANGAN';
 
 const search = ref(props.filters?.search || '');
 const type = ref(props.filters?.type || '');
-const categoryId = ref(props.filters?.category_id || '');
+const categoryId = ref(props.filters?.category_id ? Number(props.filters.category_id) : '');
 const accountId = ref(props.filters?.account_id || '');
 const dateFrom = ref(props.filters?.date_from || '');
 const dateTo = ref(props.filters?.date_to || '');
@@ -143,6 +143,7 @@ function getCategoriesByType(type) {
                         </select>
                         <select v-if="accounts?.length" v-model="accountId" @change="applyFilters" class="filter-field !w-auto min-w-[130px]">
                             <option value="">Semua Rekening</option>
+                            <option value="cash">Transaksi Tunai</option>
                             <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
                         </select>
                         <button @click="applyFilters" class="btn-primary text-xs !py-1.5 !px-4">Cari</button>
@@ -151,12 +152,12 @@ function getCategoriesByType(type) {
                 </div>
 
                 <!-- Summary -->
-                <div v-if="transactions.total" class="mb-4 text-xs text-surface-500">
+                <div v-if="transactions?.total" class="mb-4 text-xs text-surface-500">
                     Menampilkan {{ transactions.from }}–{{ transactions.to }} dari {{ transactions.total }} transaksi
                 </div>
 
                 <!-- Not Found State -->
-                <div v-if="!transactions.data.length" class="text-center py-12 text-surface-500">
+                <div v-if="!transactions?.data?.length" class="text-center py-12 text-surface-500">
                     <svg class="w-12 h-12 text-surface-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
                     <p class="font-medium text-surface-600">Tidak ada transaksi yang ditemukan.</p>
                     <p class="text-xs mt-1">Coba sesuaikan filter pencarian atau rentang tanggal.</p>
@@ -191,7 +192,7 @@ function getCategoriesByType(type) {
                                             Belum Terkategori
                                         </span>
                                     </td>
-                                    <td class="text-xs">{{ tx.bank_account?.account_alias || tx.bank_account?.bank_name }}</td>
+                                    <td class="text-xs">{{ tx.bank_account?.account_alias || tx.bank_account?.bank_name || 'Transaksi Tunai' }}</td>
                                     <td :class="['text-right font-bold whitespace-nowrap', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
                                         {{ tx.type === 'DEBIT' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
                                     </td>
@@ -218,7 +219,7 @@ function getCategoriesByType(type) {
                             </div>
                             <div class="flex justify-between items-center text-xs text-surface-500">
                                 <span>{{ formatDate(tx.transaction_date) }}</span>
-                                <span>Rekening: {{ tx.bank_account?.account_alias || tx.bank_account?.bank_name }}</span>
+                                <span>Rekening: {{ tx.bank_account?.account_alias || tx.bank_account?.bank_name || 'Transaksi Tunai' }}</span>
                             </div>
                             
                             <div class="pt-2 border-t border-rose-50/50 flex justify-between items-center text-xs">
@@ -246,11 +247,11 @@ function getCategoriesByType(type) {
                     </div>
 
                     <!-- Pagination -->
-                    <div v-if="transactions.last_page > 1" class="flex justify-center gap-2 mt-6">
-                        <template v-for="link in transactions.links" :key="link.label">
-                            <button v-if="link.url"
+                    <div v-if="transactions.last_page > 1" class="flex justify-center gap-1.5 sm:gap-2 mt-6 flex-wrap">
+                        <template v-for="(link, idx) in transactions.links" :key="link.url || 'ellipsis-' + idx">
+                            <span v-if="link.url"
                                 @click="router.get(link.url)"
-                                :class="['px-3 py-1.5 text-sm rounded-lg transition-colors', link.active ? 'bg-gradient-rose text-white' : 'text-surface-600 hover:bg-rose-50']"
+                                :class="['px-3 py-1.5 text-sm rounded-lg transition-colors cursor-pointer', link.active ? 'bg-gradient-rose text-white' : 'text-surface-600 hover:bg-rose-50']"
                                 v-html="link.label"
                             />
                         </template>
@@ -263,7 +264,7 @@ function getCategoriesByType(type) {
         <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
             <div class="fixed inset-0 bg-surface-900/60 backdrop-blur-sm transition-opacity" @click="closeEditModal"></div>
             
-            <div class="relative w-full max-w-lg transform overflow-hidden rounded-2xl bg-white p-6 text-left shadow-2xl transition-all border border-rose-50/50 animate-scale-up">
+            <div class="relative w-full max-w-lg transform overflow-hidden rounded-2xl bg-white p-6 text-left shadow-2xl transition-all border border-rose-50/50 animate-scale-in">
                 <!-- Modal Header -->
                 <div class="flex items-center justify-between pb-4 border-b border-rose-50/80">
                     <div>

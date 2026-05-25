@@ -237,10 +237,12 @@
 
 /* ── Page Transitions (Vue <Transition>) ── */
 .slide-up-enter-active {
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform, opacity;
 }
 .slide-up-leave-active {
-    transition: all 0.25s cubic-bezier(0.5, 0, 0.75, 0);
+    transition: opacity 0.25s cubic-bezier(0.5, 0, 0.75, 0), transform 0.25s cubic-bezier(0.5, 0, 0.75, 0);
+    will-change: transform, opacity;
 }
 .slide-up-enter-from {
     opacity: 0;
@@ -253,9 +255,11 @@
 
 .fade-enter-active {
     transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity;
 }
 .fade-leave-active {
     transition: opacity 0.2s cubic-bezier(0.5, 0, 0.75, 0);
+    will-change: opacity;
 }
 .fade-enter-from,
 .fade-leave-to {
@@ -264,9 +268,10 @@
 
 .expand-enter-active,
 .expand-leave-active {
-    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease, padding 0.35s ease, margin 0.35s ease;
+    transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), padding 0.35s cubic-bezier(0.16, 1, 0.3, 1), margin 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     overflow: hidden;
     max-height: 1200px;
+    will-change: max-height, opacity;
 }
 .expand-enter-from,
 .expand-leave-to {
@@ -276,4 +281,8 @@
     padding-bottom: 0 !important;
     margin-top: 0 !important;
     margin-bottom: 0 !important;
+}
+
+.animate-fade-in {
+    will-change: transform, opacity;
 }

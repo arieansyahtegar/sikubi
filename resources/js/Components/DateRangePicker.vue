@@ -72,7 +72,7 @@ function formatDate(d) {
 </script>
 
 <template>
-    <div class="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:overflow-visible">
+    <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:overflow-visible">
         <!-- Preset Buttons -->
         <div class="flex items-center gap-1 bg-cream-200/60 rounded-xl p-1 flex-shrink-0">
             <button

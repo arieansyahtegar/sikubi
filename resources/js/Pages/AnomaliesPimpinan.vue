@@ -120,83 +120,64 @@ function submitLeaderAction(flagId) {
     <AppLayout>
         <div class="space-y-6 animate-fade-in">
             <!-- Header -->
-            <div class="glass-card p-4 sm:p-6 bg-gradient-to-r from-amber-50/30 via-white to-rose-50/30 border-amber-200/30">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div class="min-w-0">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center shadow-md">
-                                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
-                            </div>
-                            <div>
-                                <h1 class="text-lg sm:text-2xl font-display font-bold text-plum">Cek Anomali Keuangan</h1>
-                                <p class="text-xs sm:text-sm text-surface-600 mt-0.5">Pantau seluruh anomali yang terdeteksi AI & status verifikasi Admin</p>
-                            </div>
-                        </div>
-                    </div>
-                    <select v-model="selectedAccountId" @change="onAccountChange" class="filter-field !w-auto !pr-8 max-w-full sm:max-w-[220px] flex-shrink-0">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h1 class="page-title text-lg sm:text-2xl">Cek Anomali Keuangan</h1>
+                    <p class="text-xs sm:text-sm text-surface-600 mt-0.5">Pantau seluruh anomali yang terdeteksi & status verifikasi Admin</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <select v-model="selectedAccountId" @change="onAccountChange" class="filter-field !w-auto !pr-8 max-w-full sm:max-w-[200px] flex-shrink-0">
                         <option value="">Semua Rekening</option>
+                        <option value="cash">Transaksi Tunai</option>
                         <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
                     </select>
                 </div>
-                <div class="mt-3">
-                    <DateRangePicker :initial-from="filters?.date_from" :initial-to="filters?.date_to" :initial-preset="filters?.preset" @update="onDateUpdate" />
-                </div>
+            </div>
+            <div>
+                <DateRangePicker :initial-from="filters?.date_from" :initial-to="filters?.date_to" :initial-preset="filters?.preset" @update="onDateUpdate" />
             </div>
 
             <!-- KPI Stat Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <div class="glass-card p-4 sm:p-5 group hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-amber-400">
+                <div class="glass-card p-4 sm:p-5 border-l-4 border-l-amber-400">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wider">Total Anomali</span>
-                        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                        <div class="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
                         </div>
                     </div>
                     <p class="stat-value text-amber-600 text-xl sm:text-2xl">{{ stats?.totalCount || 0 }}</p>
                     <p class="text-[10px] sm:text-xs text-surface-500 mt-1">Seluruh anomali terdeteksi</p>
                 </div>
-                <div class="glass-card p-4 sm:p-5 group hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-rose-400">
+                <div class="glass-card p-4 sm:p-5 border-l-4 border-l-rose-400">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wider">Belum Ditinjau</span>
-                        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <div class="w-8 h-8 rounded-xl bg-rose-50 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         </div>
                     </div>
                     <p class="stat-value text-rose-500 text-xl sm:text-2xl">{{ stats?.unreviewedCount || 0 }}</p>
                     <p class="text-[10px] sm:text-xs text-surface-500 mt-1">Menunggu tinjauan admin</p>
                 </div>
-                <div class="glass-card p-4 sm:p-5 group hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-red-500 bg-red-50/5">
+                <div class="glass-card p-4 sm:p-5 border-l-4 border-l-red-500 bg-red-50/5">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wider font-bold text-red-600">Butuh Tindakan</span>
-                        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-red-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 animate-pulse">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        <div class="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                         </div>
                     </div>
                     <p class="stat-value text-red-500 text-xl sm:text-2xl">{{ stats?.needsLeaderActionCount || 0 }}</p>
                     <p class="text-[10px] sm:text-xs text-surface-500 mt-1">Perlu tindak lanjut Pimpinan</p>
                 </div>
-                <div class="glass-card p-4 sm:p-5 group hover:shadow-card-hover transition-all duration-300 border-l-4 border-l-emerald-400">
+                <div class="glass-card p-4 sm:p-5 border-l-4 border-l-emerald-400">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wider">Terverifikasi Aman</span>
-                        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <div class="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         </div>
                     </div>
                     <p class="stat-value text-emerald-600 text-xl sm:text-2xl">{{ stats?.reviewedCount || 0 }}</p>
                     <p class="text-[10px] sm:text-xs text-surface-500 mt-1">Sudah ditinjau & aman</p>
-                </div>
-            </div>
-
-            <!-- Info Banner -->
-            <div class="glass-card p-4 border-l-4 border-l-blue-400">
-                <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-                        <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
-                    </div>
-                    <div>
-                        <p class="text-sm font-semibold text-plum">Informasi Panel Pengawasan</p>
-                        <p class="text-xs text-surface-600 mt-0.5 leading-relaxed">Halaman ini menampilkan seluruh bendera anomali keuangan yang dideteksi oleh sistem AI, baik yang masih menunggu verifikasi maupun yang telah diproses oleh Admin Keuangan. Gunakan filter untuk mempersempit pencarian.</p>
-                    </div>
                 </div>
             </div>
 
@@ -242,7 +223,7 @@ function submitLeaderAction(flagId) {
                                         {{ severityLabel(flag.severity) }}
                                     </span>
                                     <span class="badge text-[10px] py-0.5 px-2.5 rounded-lg bg-surface-50 text-surface-600 border border-surface-200 font-semibold">
-                                        Skor AI: {{ (flag.score * 100).toFixed(0) }}%
+                                        Skor: {{ (flag.score * 100).toFixed(0) }}%
                                     </span>
                                 </div>
                                 <p class="text-sm font-semibold text-plum truncate">{{ flag.transaction?.description }}</p>
@@ -253,29 +234,29 @@ function submitLeaderAction(flagId) {
                             </div>
 
                             <!-- Right: amount + status + expand icon -->
-                            <div class="flex items-center gap-3 sm:gap-4 flex-shrink-0">
-                                <p :class="['text-base sm:text-lg font-bold whitespace-nowrap', flag.transaction?.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
+                            <div class="flex items-center gap-2 sm:gap-4 flex-shrink-0 min-w-0">
+                                <p :class="['text-sm sm:text-lg font-bold whitespace-nowrap', flag.transaction?.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
                                     {{ flag.transaction?.type === 'DEBIT' ? '+' : '-' }}{{ formatCurrency(flag.transaction?.amount || 0) }}
                                 </p>
                                 <!-- Status badge -->
-                                <div v-if="flag.is_reviewed">
-                                    <span v-if="flag.is_dismissed" class="badge text-[10px] bg-surface-100 text-surface-500 border border-surface-200 inline-flex items-center gap-1 py-0.5 px-2 rounded-lg font-semibold">
+                                <div v-if="flag.is_reviewed" class="flex-shrink-0">
+                                    <span v-if="flag.is_dismissed" class="badge text-[9px] sm:text-[10px] bg-surface-100 text-surface-500 border border-surface-200 inline-flex items-center gap-1 py-0.5 px-1.5 sm:px-2 rounded-lg font-semibold whitespace-nowrap">
                                         ⚠ Diabaikan
                                     </span>
-                                    <span v-else-if="needsLeaderAction(flag)" class="badge text-[10px] bg-red-500 text-white border border-red-600 inline-flex items-center gap-1 py-0.5 px-2 rounded-lg font-bold">
+                                    <span v-else-if="needsLeaderAction(flag)" class="badge text-[9px] sm:text-[10px] bg-red-500 text-white border border-red-600 inline-flex items-center gap-1 py-0.5 px-1.5 sm:px-2 rounded-lg font-bold whitespace-nowrap">
                                         ⚠️ Butuh Tindak Lanjut
                                     </span>
                                     <span v-else-if="hasLeaderAction(flag)" :class="[
-                                        'badge text-[10px] inline-flex items-center gap-1 py-0.5 px-2 rounded-lg font-bold text-white',
+                                        'badge text-[9px] sm:text-[10px] inline-flex items-center gap-1 py-0.5 px-1.5 sm:px-2 rounded-lg font-bold text-white whitespace-nowrap',
                                         flag.is_approved_by_leader ? 'bg-emerald-500 border border-emerald-600' : 'bg-rose-600 border border-rose-700'
                                     ]">
                                         {{ flag.is_approved_by_leader ? '✓ Disetujui Pimpinan' : '❌ Ditolak Pimpinan' }}
                                     </span>
-                                    <span v-else class="badge text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1 py-0.5 px-2 rounded-lg font-semibold">
+                                    <span v-else class="badge text-[9px] sm:text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1 py-0.5 px-1.5 sm:px-2 rounded-lg font-semibold whitespace-nowrap">
                                         ✓ Terverifikasi
                                     </span>
                                 </div>
-                                <span v-else class="badge text-[10px] bg-amber-50 text-amber-600 border border-amber-200/60 inline-flex items-center gap-1 font-bold py-0.5 px-2 rounded-lg">
+                                <span v-else class="badge text-[9px] sm:text-[10px] bg-amber-50 text-amber-600 border border-amber-200/60 inline-flex items-center gap-1 font-bold py-0.5 px-1.5 sm:px-2 rounded-lg whitespace-nowrap flex-shrink-0">
                                     🚨 Pending
                                 </span>
 
@@ -288,13 +269,13 @@ function submitLeaderAction(flagId) {
                     <!-- Expanded detail -->
                     <Transition name="expand">
                         <div v-if="expandedId === flag.id" class="border-t border-rose-100/40 bg-cream-100/20 p-4 sm:p-5 space-y-4">
-                            <!-- AI Analysis -->
+                            <!-- Analysis -->
                             <div class="rounded-xl bg-white border border-rose-100/30 p-4 shadow-sm">
                                 <div class="flex items-center gap-2 mb-2">
                                     <div class="w-6 h-6 rounded-lg bg-gradient-to-br from-violet-400 to-fuchsia-500 flex items-center justify-center">
                                         <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" /></svg>
                                     </div>
-                                    <h4 class="text-xs font-bold text-plum uppercase tracking-wider">Analisis Deteksi AI</h4>
+                                    <h4 class="text-xs font-bold text-plum uppercase tracking-wider">Analisis Deteksi</h4>
                                 </div>
                                 <p class="text-xs text-surface-700 leading-relaxed">{{ flag.reason }}</p>
                             </div>
@@ -428,11 +409,11 @@ function submitLeaderAction(flagId) {
             </div>
 
             <!-- Pagination -->
-            <div v-if="anomalies.last_page > 1" class="flex justify-center gap-2 mt-6">
-                <template v-for="link in anomalies.links" :key="link.label">
-                    <button v-if="link.url"
+            <div v-if="anomalies.last_page > 1" class="flex justify-center gap-1.5 sm:gap-2 mt-6 flex-wrap">
+                <template v-for="(link, idx) in anomalies.links" :key="link.url || 'ellipsis-' + idx">
+                    <span v-if="link.url"
                         @click="router.get(link.url)"
-                        :class="['px-3 py-1.5 text-sm rounded-lg transition-colors', link.active ? 'bg-gradient-rose text-white' : 'text-surface-600 hover:bg-rose-50']"
+                        :class="['px-3 py-1.5 text-sm rounded-lg transition-colors cursor-pointer', link.active ? 'bg-gradient-rose text-white' : 'text-surface-600 hover:bg-rose-50']"
                         v-html="link.label"
                     />
                 </template>
@@ -441,10 +422,3 @@ function submitLeaderAction(flagId) {
     </AppLayout>
 </template>
 
-<style scoped>
-.expand-enter-active { transition: all 0.3s ease-out; }
-.expand-leave-active { transition: all 0.2s ease-in; }
-.expand-enter-from { opacity: 0; max-height: 0; }
-.expand-leave-to { opacity: 0; max-height: 0; }
-.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-</style>

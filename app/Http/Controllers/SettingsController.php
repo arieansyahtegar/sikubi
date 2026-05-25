@@ -14,6 +14,7 @@ class SettingsController extends Controller
     public function categories(Request $request)
     {
         $accountId = $request->input('account_id');
+        $month = $request->input('month'); // format: YYYY-MM
 
         // Only show accounts that actually have imported transactions
         $accounts = BankAccount::whereHas('transactions')->get();
@@ -23,34 +24,83 @@ class SettingsController extends Controller
             return Inertia::render('Settings/Categories', [
                 'categories' => collect([]),
                 'accounts' => $accounts,
-                'filters' => ['account_id' => $accountId],
+                'filters' => ['account_id' => $accountId, 'month' => $month],
                 'hasData' => false,
+                'availableMonths' => [],
             ]);
         }
 
         // If no filter selected, default to first account with data
         $effectiveAccountId = $accountId ?: $accounts->first()?->id;
 
-        $query = Category::withCount('transactions', 'classificationRules')
-            ->with('bankAccount:id,bank_name,account_alias');
+        // Get available months from transactions
+        $driver = \DB::connection()->getDriverName();
+        if ($driver === 'sqlite') {
+            $monthsQuery = Transaction::selectRaw("DISTINCT strftime('%Y-%m', transaction_date) as month_key")
+                ->orderByDesc('month_key');
+        } else {
+            $monthsQuery = Transaction::selectRaw("DISTINCT DATE_FORMAT(transaction_date, '%Y-%m') as month_key")
+                ->orderByDesc('month_key');
+        }
+        if ($effectiveAccountId) {
+            $monthsQuery->where(function ($q) use ($effectiveAccountId) {
+                if ($effectiveAccountId === 'cash') {
+                    $q->whereNull('bank_account_id');
+                } else {
+                    $q->where('bank_account_id', $effectiveAccountId)
+                      ->orWhereNull('bank_account_id');
+                }
+            });
+        }
+        $availableMonths = $monthsQuery->pluck('month_key')->toArray();
+
+        // Default to current month if not specified
+        if (!$month && !empty($availableMonths)) {
+            $month = $availableMonths[0]; // most recent month
+        }
+
+        $query = Category::with('bankAccount:id,bank_name,account_alias');
+
+        // Add transaction count filtered by month
+        if ($month) {
+            $startOfMonth = \Carbon\Carbon::parse($month . '-01')->startOfMonth();
+            $endOfMonth = \Carbon\Carbon::parse($month . '-01')->endOfMonth();
+
+            $query->withCount([
+                'transactions' => function ($q) use ($startOfMonth, $endOfMonth) {
+                    $q->whereBetween('transaction_date', [$startOfMonth, $endOfMonth]);
+                },
+            ]);
+        } else {
+            $query->withCount('transactions');
+        }
 
         if ($effectiveAccountId) {
             $query->where(function ($q) use ($effectiveAccountId) {
-                $q->where('bank_account_id', $effectiveAccountId)
-                  ->orWhereNull('bank_account_id');
+                if ($effectiveAccountId === 'cash') {
+                    $q->whereNull('bank_account_id');
+                } else {
+                    $q->where('bank_account_id', $effectiveAccountId)
+                      ->orWhereNull('bank_account_id');
+                }
             });
         }
 
         return Inertia::render('Settings/Categories', [
             'categories' => $query->orderBy('type')->orderBy('sort_order')->get(),
             'accounts' => $accounts,
-            'filters' => ['account_id' => $effectiveAccountId],
+            'filters' => ['account_id' => $effectiveAccountId, 'month' => $month],
             'hasData' => true,
+            'availableMonths' => $availableMonths,
         ]);
     }
 
     public function storeCategory(Request $request)
     {
+        if ($request->input('bank_account_id') === 'cash') {
+            $request->merge(['bank_account_id' => null]);
+        }
+
         $request->validate([
             'name' => 'required|string|max:100',
             'type' => 'required|in:DEBIT,CREDIT',

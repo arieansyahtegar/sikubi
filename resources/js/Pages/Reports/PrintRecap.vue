@@ -66,25 +66,7 @@ function printPage() {
     window.print();
 }
 
-const isExporting = ref(false);
 const isExportingExcel = ref(false);
-
-function downloadCsv() {
-    if (!hasReport.value) return;
-    isExporting.value = true;
-    const params = new URLSearchParams({
-        date_from: `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}-01`,
-        date_to: getLastDay(),
-    });
-    if (selectedAccountId.value) params.set('account_id', selectedAccountId.value);
-    const link = document.createElement('a');
-    link.href = '/reports/recap?' + params.toString();
-    link.setAttribute('download', '');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(() => { isExporting.value = false; }, 2000);
-}
 
 function downloadExcel() {
     if (!hasReport.value) return;
@@ -151,6 +133,7 @@ function formatCurrency(v) {
                             <label class="label-text">Rekening (Opsional)</label>
                             <select v-model="selectedAccountId" class="input-field" id="account-selector">
                                 <option value="">Semua Rekening</option>
+                                <option value="cash">Transaksi Tunai</option>
                                 <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
                             </select>
                         </div>
@@ -181,16 +164,7 @@ function formatCurrency(v) {
                             </svg>
                             Kembali
                         </button>
-                        <button @click="downloadCsv" :disabled="isExporting" class="btn-secondary text-xs gap-1.5" id="btn-csv">
-                            <svg v-if="isExporting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12M12 16.5V3" />
-                            </svg>
-                            {{ isExporting ? 'CSV...' : 'CSV' }}
-                        </button>
+
                         <button @click="downloadExcel" :disabled="isExportingExcel" class="btn-secondary text-xs gap-1.5 !text-emerald-700 hover:!text-emerald-800" id="btn-excel">
                             <svg v-if="isExportingExcel" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -226,7 +200,13 @@ function formatCurrency(v) {
                             <span class="report-subtitle">Periode Bulan {{ summary.month_label }}</span>
                         </h1>
                         <div class="report-bank-meta">
-                            <span v-if="selectedAccount" class="bank-info-badge">
+                            <span v-if="selectedAccountId === 'cash'" class="bank-info-badge">
+                                <svg class="w-3.5 h-3.5 inline-block align-text-top mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.33l-7.5-5-7.5 5V21" />
+                                </svg>
+                                Rekening: Transaksi Tunai
+                            </span>
+                            <span v-else-if="selectedAccount" class="bank-info-badge">
                                 <svg class="w-3.5 h-3.5 inline-block align-text-top mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.33l-7.5-5-7.5 5V21" />
                                 </svg>
@@ -537,9 +517,15 @@ function formatCurrency(v) {
 /* Recap Cards Grid */
 .recap-cards-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 1rem;
     margin-bottom: 2rem;
+}
+
+@media (min-width: 640px) {
+    .recap-cards-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
 }
 
 .recap-card {
@@ -612,8 +598,14 @@ function formatCurrency(v) {
 
 .breakdown-columns {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 1.5rem;
+}
+
+@media (min-width: 640px) {
+    .breakdown-columns {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 .breakdown-col {
@@ -832,11 +824,6 @@ function formatCurrency(v) {
    ═══════════════════════════════════════ */
 
 @media print {
-    @page {
-        size: A4 portrait;
-        margin: 10mm 12mm 10mm 12mm;
-    }
-
     /* Hide layout chrome elements */
     aside,
     header,

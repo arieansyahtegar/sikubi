@@ -1,15 +1,16 @@
 <script setup>
 import { ref, watch } from 'vue';
-import { Head, router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, router, useForm, usePage, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 
-const props = defineProps({ categories: Array, accounts: Array, filters: Object, hasData: { type: Boolean, default: true } });
+const props = defineProps({ categories: Array, accounts: Array, filters: Object, hasData: { type: Boolean, default: true }, availableMonths: { type: Array, default: () => [] } });
 const page = usePage();
 const canManage = page.props.permissions?.canManageSettings;
 const showForm = ref(false);
 const showHelp = ref(false);
 const selectedAccountId = ref(props.filters?.account_id || '');
+const selectedMonth = ref(props.filters?.month || '');
 const form = useForm({ name: '', type: 'CREDIT', color: '#E8637A', icon: 'folder', bank_account_id: '' });
 
 const showDeleteModal = ref(false);
@@ -38,8 +39,25 @@ watch(selectedAccountId, (val) => {
     form.bank_account_id = val;
     router.get('/settings/categories', {
         account_id: selectedAccountId.value || undefined,
+        month: selectedMonth.value || undefined,
     }, { preserveState: true, preserveScroll: true });
 }, { immediate: true });
+
+// Month filter
+function selectMonth(m) {
+    selectedMonth.value = m;
+    router.get('/settings/categories', {
+        account_id: selectedAccountId.value || undefined,
+        month: m || undefined,
+    }, { preserveState: true, preserveScroll: true });
+}
+
+function formatMonth(m) {
+    if (!m) return '';
+    const [y, mo] = m.split('-');
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    return `${months[parseInt(mo) - 1]} ${y}`;
+}
 
 function bankLabel(cat) {
     if (!cat.bank_account) return 'Global';
@@ -58,6 +76,8 @@ function bankLabel(cat) {
                 </div>
                 <div class="flex gap-2">
                     <select v-if="accounts?.length" v-model="selectedAccountId" class="input-field !w-auto !pr-8 text-sm !py-2">
+                        <option value="">Semua Rekening</option>
+                        <option value="cash">Transaksi Tunai</option>
                         <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
                     </select>
                     <button @click="showHelp = !showHelp" class="btn-secondary" title="Bantuan">
@@ -65,6 +85,28 @@ function bankLabel(cat) {
                         Bantuan
                     </button>
                     <button v-if="canManage" @click="showForm = !showForm" class="btn-primary">+ Tambah</button>
+                </div>
+            </div>
+
+            <!-- Month Filter Panel -->
+            <div v-if="availableMonths?.length > 0" class="glass-card p-3 sm:p-4">
+                <div class="flex items-center gap-3 mb-2">
+                    <svg class="w-4 h-4 text-surface-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
+                    <span class="text-xs font-semibold text-surface-600 uppercase tracking-wider">Filter Bulan</span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                    <button
+                        v-for="m in availableMonths" :key="m"
+                        @click="selectMonth(m)"
+                        :class="[
+                            'px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-200',
+                            selectedMonth === m
+                                ? 'bg-gradient-rose text-white shadow-sm scale-[1.02]'
+                                : 'bg-cream-200/50 text-surface-600 hover:bg-cream-300/60 hover:text-plum'
+                        ]"
+                    >
+                        {{ formatMonth(m) }}
+                    </button>
                 </div>
             </div>
 
@@ -86,10 +128,6 @@ function bankLabel(cat) {
                         <div>
                             <h4 class="font-semibold text-plum mb-1.5">🏦 Rekening Bank</h4>
                             <p class="text-surface-600">Pilih rekening bank untuk membuat kategori khusus per bank. Biarkan kosong untuk kategori global.</p>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold text-plum mb-1.5">🔗 Aturan & Transaksi</h4>
-                            <p class="text-surface-600">Jumlah aturan klasifikasi dan transaksi yang termasuk kategori ini.</p>
                         </div>
                     </div>
                     <button @click="showHelp = false" class="mt-3 text-xs text-surface-500 hover:text-plum">Tutup bantuan ×</button>
@@ -124,7 +162,7 @@ function bankLabel(cat) {
             <div v-else-if="categories.length > 0" class="glass-card overflow-hidden">
                 <div class="hidden sm:block table-container">
                     <table class="data-table">
-                        <thead><tr><th>Nama</th><th>Tipe</th><th>Transaksi</th><th>Aturan</th><th v-if="canManage"></th></tr></thead>
+                        <thead><tr><th>Nama</th><th>Tipe</th><th>Transaksi</th><th v-if="canManage"></th></tr></thead>
                         <tbody>
                             <tr v-for="cat in categories" :key="cat.id" :class="cat.is_suggested ? 'bg-amber-50/30' : ''">
                                 <td>
@@ -135,8 +173,11 @@ function bankLabel(cat) {
                                     </div>
                                 </td>
                                 <td><span :class="cat.type === 'DEBIT' ? 'badge-green' : 'badge-red'">{{ cat.type === 'DEBIT' ? 'Pemasukan' : 'Pengeluaran' }}</span></td>
-                                <td>{{ cat.transactions_count }}</td>
-                                <td>{{ cat.classification_rules_count }}</td>
+                                <td>
+                                    <button @click="router.visit('/transactions?category_id=' + cat.id, { preserveState: false })" class="text-xs font-semibold text-rose-gold hover:text-rose-600 hover:underline transition-colors">
+                                        {{ cat.transactions_count }} transaksi
+                                    </button>
+                                </td>
                                 <td v-if="canManage">
                                     <div class="flex items-center gap-1">
                                         <button v-if="cat.is_suggested" @click="approveCategory(cat)" class="text-emerald-500 hover:text-emerald-700 p-1 rounded-lg hover:bg-emerald-50 transition-colors" title="Setujui kategori">
@@ -152,11 +193,28 @@ function bankLabel(cat) {
                     </table>
                 </div>
                 <div class="sm:hidden p-4 space-y-3">
-                    <div v-for="cat in categories" :key="cat.id" class="mobile-card flex items-center justify-between">
-                        <div>
-                            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" :style="{ background: cat.color }" /><span class="font-medium">{{ cat.name }}</span></div>
+                    <div v-for="cat in categories" :key="cat.id" class="mobile-card space-y-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="w-3 h-3 rounded-full flex-shrink-0" :style="{ background: cat.color }" />
+                                <span class="font-medium truncate">{{ cat.name }}</span>
+                                <span v-if="cat.is_suggested" class="badge-yellow text-[10px] flex-shrink-0">Disarankan</span>
+                            </div>
+                            <span :class="[cat.type === 'DEBIT' ? 'badge-green' : 'badge-red', 'flex-shrink-0 ml-2']">{{ cat.type === 'DEBIT' ? 'Pemasukan' : 'Pengeluaran' }}</span>
                         </div>
-                        <span :class="cat.type === 'DEBIT' ? 'badge-green' : 'badge-red'">{{ cat.type === 'DEBIT' ? 'Pemasukan' : 'Pengeluaran' }}</span>
+                        <button @click="router.visit('/transactions?category_id=' + cat.id, { preserveState: false })" class="text-xs font-semibold text-rose-gold hover:text-rose-600 hover:underline transition-colors">
+                            {{ cat.transactions_count }} transaksi
+                        </button>
+                        <div v-if="canManage" class="flex items-center gap-2 pt-1">
+                            <button v-if="cat.is_suggested" @click="approveCategory(cat)" class="text-emerald-500 hover:text-emerald-700 text-xs font-semibold flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-emerald-50 transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                                Setujui
+                            </button>
+                            <button @click="confirmDelete(cat)" class="text-red-400 hover:text-red-600 text-xs font-semibold flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                                Hapus
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -180,9 +238,4 @@ function bankLabel(cat) {
     </AppLayout>
 </template>
 
-<style scoped>
-.slide-up-enter-active { transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-.slide-up-leave-active { transition: all 0.25s cubic-bezier(0.5, 0, 0.75, 0); }
-.slide-up-enter-from { opacity: 0; transform: translateY(16px); }
-.slide-up-leave-to { opacity: 0; transform: translateY(-8px); }
-</style>
+<style scoped></style>

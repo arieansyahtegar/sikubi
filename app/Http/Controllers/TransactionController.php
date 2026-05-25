@@ -102,7 +102,11 @@ class TransactionController extends Controller
             $query->where('category_id', $categoryId);
         }
         if ($accountId = $request->input('account_id')) {
-            $query->where('bank_account_id', $accountId);
+            if ($accountId === 'cash') {
+                $query->whereNull('bank_account_id');
+            } else {
+                $query->where('bank_account_id', $accountId);
+            }
         }
         if ($dateFrom = $request->input('date_from')) {
             $query->where('transaction_date', '>=', $dateFrom);

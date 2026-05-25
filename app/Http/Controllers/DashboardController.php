@@ -73,11 +73,12 @@ class DashboardController extends Controller
             ->map(fn($item) => [
                 'name' => $item->category ? "{$item->category->name} (" . ($item->category->type === 'DEBIT' ? 'In' : 'Out') . ")" : 'Belum Diklasifikasi',
                 'value' => round($item->total),
-                'color' => $item->category->color ?? '#CBD5E1', // Gray-300
+                'color' => $item->category->color ?? '#CBD5E1',
+                'category_id' => $item->category_id,
             ]);
 
         // Recent transactions
-        $recentTxQuery = Transaction::with('category:id,name,color')
+        $recentTxQuery = Transaction::with('category:id,name,color', 'bankAccount:id,bank_name,account_alias')
             ->forAccount($accountId)
             ->orderByDesc('transaction_date');
         if ($dateFrom) $recentTxQuery->where('transaction_date', '>=', $dateFrom);
@@ -88,7 +89,6 @@ class DashboardController extends Controller
         $accounts = BankAccount::all();
 
         // Determine which dashboard to render
-        $user = $request->user();
         $view = $user->isDirektur() ? 'Dashboard/Pimpinan' : 'Dashboard/Admin';
 
         $data = [
@@ -116,6 +116,8 @@ class DashboardController extends Controller
         ];
 
         // Admin-specific: recent imports + pending anomalies
+        $data['recentImports'] = [];
+        $data['pendingAnomalies'] = [];
         if ($user->isAdmin()) {
             $data['recentImports'] = \App\Models\ImportBatch::with('bankAccount:id,bank_name,account_alias')
                 ->orderByDesc('imported_at')
@@ -215,8 +217,11 @@ class DashboardController extends Controller
                 $current->addMonth();
             }
         } else {
-            ksort($groupMap);
-            foreach ($groupMap as $key => $entry) {
+            $startYear = (int)$startDate->format('Y');
+            $endYear = (int)$endDate->format('Y');
+            for ($year = $startYear; $year <= $endYear; $year++) {
+                $key = (string)$year;
+                $entry = $groupMap[$key] ?? ['debit' => 0, 'credit' => 0];
                 $dates[] = $key;
                 $debitData[] = round($entry['debit']);
                 $creditData[] = round($entry['credit']);

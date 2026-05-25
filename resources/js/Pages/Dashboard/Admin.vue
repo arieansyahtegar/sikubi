@@ -32,7 +32,6 @@ const greeting = computed(() => {
 const STORAGE_KEY = 'sikubi_admin_widgets';
 const defaultWidgets = [
     { id: 'imports', title: 'Import Terbaru', collapsed: false },
-    { id: 'anomalies', title: 'Anomali Perlu Ditinjau', collapsed: false },
     { id: 'cashflow', title: 'Arus Kas', collapsed: false },
     { id: 'charts', title: 'Komposisi & Transaksi', collapsed: false },
 ];
@@ -92,11 +91,12 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
                     </div>
                     <select v-model="selectedAccountId" class="filter-field !w-auto !pr-8 max-w-full sm:max-w-[200px] flex-shrink-0">
                         <option value="">Semua Rekening</option>
+                        <option value="cash">Transaksi Tunai</option>
                         <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
                     </select>
                 </div>
                 <div class="mt-3">
-                    <DateRangePicker :initial-from="filters?.date_from" :initial-to="filters?.date_to" :initial-preset="filters?.preset" @update="onDateUpdate" />
+                    <DateRangePicker :initial-from="filters?.date_from ?? null" :initial-to="filters?.date_to ?? null" :initial-preset="filters?.preset ?? null" @update="onDateUpdate" />
                 </div>
             </div>
 
@@ -255,7 +255,7 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
                                 </div>
                                 <Transition name="expand">
                                     <div v-show="!isCollapsed('charts')" class="p-4 sm:p-6">
-                                        <div class="h-[320px] sm:h-[300px]"><CategoryDonutChart :data="breakdown" /></div>
+                                        <div class="h-[320px] sm:h-[300px]"><CategoryDonutChart :data="breakdown" @category-click="(id) => router.visit('/transactions?category_id=' + id, { preserveState: false })" /></div>
                                     </div>
                                 </Transition>
                             </div>
@@ -278,13 +278,16 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
                                             </div>
                                             <div class="flex-1 min-w-0">
                                                 <p class="text-sm text-plum truncate">{{ tx.description }}</p>
-                                                <p class="text-xs text-surface-500">{{ formatDate(tx.transaction_date) }}<span v-if="tx.category" class="ml-1">· {{ tx.category.name }}</span></p>
+                                                <p class="text-xs text-surface-500">{{ formatDate(tx.transaction_date) }}<span v-if="tx.bankAccount">· {{ tx.bankAccount.account_alias || tx.bankAccount.bank_name }}</span><span v-else>· Transaksi Tunai</span><span v-if="tx.category">· {{ tx.category.name }}</span></p>
                                             </div>
                                             <p :class="['text-sm font-semibold whitespace-nowrap', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
                                                 {{ tx.type === 'DEBIT' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
                                             </p>
                                         </div>
-                                        <div v-if="!recentTransactions?.length" class="text-center py-8 text-surface-500 text-sm">Belum ada transaksi.</div>
+                                        <div v-if="!recentTransactions?.length" class="text-center py-10">
+                                            <svg class="w-12 h-12 text-surface-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" /></svg>
+                                            <p class="text-sm text-surface-400">Belum ada transaksi</p>
+                                        </div>
                                     </div>
                                 </Transition>
                             </div>

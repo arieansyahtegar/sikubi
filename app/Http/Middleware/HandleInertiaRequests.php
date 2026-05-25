@@ -32,6 +32,7 @@ class HandleInertiaRequests extends Middleware
                 'canDetectAnomalies' => $user?->isAdmin() ?? false,
                 'canManageUsers' => $user?->isDirektur() ?? false,
                 'canEditTransactions' => $user?->isAdmin() ?? false,
+                'canManageCashTransactions' => $user?->isAdmin() ?? false,
             ],
             'notifications' => fn () => $user ? $this->getNotifications($user) : ['items' => [], 'unread_count' => 0],
             'flash' => [
@@ -44,7 +45,7 @@ class HandleInertiaRequests extends Middleware
     private function getNotifications($user): array
     {
         $items = [];
-        // Only admin gets anomaly & import notifications
+
         if ($user->isAdmin()) {
             // 1. Unreviewed anomalies (HIGH first)
             $unreviewedAnomalies = AnomalyFlag::where('is_reviewed', false)
@@ -87,7 +88,30 @@ class HandleInertiaRequests extends Middleware
             }
         }
 
-        // Sort by time desc
+        if ($user->isDirektur()) {
+            // Anomalies needing leader action, not yet reviewed by Pimpinan
+            $pendingLeaderAnomalies = AnomalyFlag::where('needs_leader_action', true)
+                ->whereNull('leader_reviewed_at')
+                ->where('is_dismissed', false)
+                ->orderByDesc('detected_at')
+                ->limit(5)
+                ->with(['transaction:id,description,amount,type'])
+                ->get();
+
+            foreach ($pendingLeaderAnomalies as $flag) {
+                $items[] = [
+                    'id' => 'leader_anomaly_' . $flag->id,
+                    'type' => 'leader_action',
+                    'severity' => $flag->severity,
+                    'title' => 'Anomali Perlu Tindakan',
+                    'message' => mb_substr($flag->reason, 0, 80) . (mb_strlen($flag->reason) > 80 ? '...' : ''),
+                    'url' => '/anomalies/check',
+                    'time' => $flag->detected_at?->toISOString(),
+                    'read' => false,
+                ];
+            }
+        }
+
         usort($items, fn($a, $b) => strcmp($b['time'] ?? '', $a['time'] ?? ''));
 
         $unreadCount = collect($items)->where('read', false)->count();

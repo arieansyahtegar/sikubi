@@ -71,12 +71,12 @@ function submitEdit() {
     <Head title="Rekening Bank — SIKUBI" />
     <AppLayout>
         <div class="space-y-6 animate-fade-in">
-            <div class="flex items-center justify-between">
+            <div class="flex items-start sm:items-center justify-between gap-2 flex-col sm:flex-row">
                 <div>
                     <h1 class="page-title">Rekening Bank</h1>
                     <p class="text-sm text-surface-600 mt-1">Kelola rekening bank yang terhubung</p>
                 </div>
-                <button @click="showForm = !showForm" class="btn-primary">+ Tambah</button>
+                <button @click="showForm = !showForm" class="btn-primary w-full sm:w-auto justify-center">+ Tambah</button>
             </div>
             <Transition name="slide-up">
                 <div v-if="showForm" class="glass-card p-6">
@@ -124,7 +124,7 @@ function submitEdit() {
         <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
             <div class="fixed inset-0 bg-surface-900/60 backdrop-blur-sm transition-opacity" @click="closeEditModal"></div>
             
-            <div class="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left shadow-2xl transition-all border border-rose-50/50 animate-scale-up">
+            <div class="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left shadow-2xl transition-all border border-rose-50/50 animate-scale-in">
                 <!-- Modal Header -->
                 <div class="flex items-center justify-between pb-4 border-b border-rose-50/80">
                     <div>
@@ -176,9 +176,4 @@ function submitEdit() {
     </AppLayout>
 </template>
 
-<style scoped>
-.slide-up-enter-active { transition: all 0.3s ease-out; }
-.slide-up-leave-active { transition: all 0.2s ease-in; }
-.slide-up-enter-from { opacity: 0; transform: translateY(16px); }
-.slide-up-leave-to { opacity: 0; transform: translateY(-8px); }
-</style>
+<style scoped></style>
