@@ -166,7 +166,7 @@ function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: '
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <p class="text-sm text-plum truncate">{{ tx.description }}</p>
-                                    <p class="text-xs text-surface-500">{{ formatDate(tx.transaction_date) }}<span v-if="tx.bankAccount">· {{ tx.bankAccount.account_alias || tx.bankAccount.bank_name }}</span><span v-else>· Transaksi Tunai</span><span v-if="tx.category">· {{ tx.category.name }}</span></p>
+                                    <p class="text-xs text-surface-500">{{ formatDate(tx.transaction_date) }}<span v-if="tx.category"> · {{ tx.category.name }}</span><span v-if="tx.bank_account"> · <span :class="['font-medium', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">{{ tx.bank_account.account_alias || tx.bank_account.bank_name }}</span></span><span v-else> · <span :class="['font-medium', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">Transaksi Tunai</span></span></p>
                                 </div>
                                 <p :class="['text-sm font-bold whitespace-nowrap', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
                                     {{ tx.type === 'DEBIT' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}

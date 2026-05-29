@@ -35,6 +35,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // ── Admin Keuangan only ──
 Route::middleware(['auth', 'verified', 'role:ADMIN_KEUANGAN'])->group(function () {
     // Reports & Exports
+    Route::get('/reports/recap', [ReportController::class, 'recapCsv'])->name('reports.recap');
     Route::get('/reports/recap/excel', [ReportController::class, 'recapExcel'])->name('reports.excel');
     Route::get('/reports/print', [ReportController::class, 'printRecap'])->name('reports.print');
 

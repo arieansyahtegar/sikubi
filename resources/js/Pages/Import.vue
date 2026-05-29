@@ -114,12 +114,63 @@ function formatSize(b) {
     return (b / 1048576).toFixed(1) + ' MB';
 }
 
+// Visual Stepper Progress State
+const currentStep = ref(1);
+const stepStatus = ref([
+    { id: 1, label: 'Upload File', desc: 'Mentransmisikan berkas bank mutasi koran ke server...', status: 'waiting' },
+    { id: 2, label: 'Membaca Format', desc: 'Mengurai format bank (BCA/BRI) & dekripsi berkas PDF...', status: 'waiting' },
+    { id: 3, label: 'Parsing Transaksi', desc: 'Mengekstrak baris-baris mutasi transaksi secara rinci...', status: 'waiting' },
+    { id: 4, label: 'Pengecekan Duplikat', desc: 'Mencocokkan sidik jari hash transaksi untuk mencegah duplikasi...', status: 'waiting' },
+    { id: 5, label: 'Auto Klasifikasi', desc: 'Melabeli kategori transaksi secara otomatis (Rules & KNN)...', status: 'waiting' },
+    { id: 6, label: 'Import Selesai', desc: 'Seluruh transaksi berhasil diamankan ke database.', status: 'waiting' },
+]);
+
+let stepperInterval = null;
+
+function startStepper() {
+    currentStep.value = 1;
+    stepStatus.value.forEach((step, idx) => {
+        step.status = idx === 0 ? 'active' : 'waiting';
+    });
+
+    if (stepperInterval) clearInterval(stepperInterval);
+
+    stepperInterval = setInterval(() => {
+        const nextIndex = currentStep.value; // 1-indexed next index
+        if (nextIndex < 5) {
+            stepStatus.value[currentStep.value - 1].status = 'completed';
+            stepStatus.value[nextIndex].status = 'active';
+            currentStep.value += 1;
+        } else {
+            // Stay at Step 5 until backend responds
+            clearInterval(stepperInterval);
+        }
+    }, 1000);
+}
+
+function completeStepper(success = true) {
+    if (stepperInterval) clearInterval(stepperInterval);
+
+    if (success) {
+        stepStatus.value.forEach((step, idx) => {
+            if (idx < 5) {
+                step.status = 'completed';
+            }
+        });
+        currentStep.value = 6;
+        stepStatus.value[5].status = 'completed';
+    } else {
+        stepStatus.value[currentStep.value - 1].status = 'error';
+    }
+}
+
 function uploadFile() {
     if (!selectedAccountId.value) { addToast?.('Pilih rekening bank terlebih dahulu', 'error'); return; }
     if (!selectedFiles.value.length) { addToast?.('Pilih minimal 1 file terlebih dahulu', 'error'); return; }
 
     uploading.value = true;
     uploadResult.value = null;
+    startStepper();
 
     const formData = new FormData();
     formData.append('account_id', selectedAccountId.value);
@@ -133,15 +184,24 @@ function uploadFile() {
         onSuccess: (p) => {
             const result = p.props.flash?.importResult;
             if (result) {
-                uploadResult.value = result;
-                selectedFiles.value = [];
-                addToast?.(`Import selesai: ${result.success_rows} berhasil, ${result.duplicate_rows} duplikat`, 'success');
+                completeStepper(true);
+                setTimeout(() => {
+                    uploadResult.value = result;
+                    selectedFiles.value = [];
+                    uploading.value = false;
+                    addToast?.(`Import selesai: ${result.success_rows} berhasil, ${result.duplicate_rows} duplikat`, 'success');
+                }, 1500); // 1.5s delay to celebrate the completion checklist!
+            } else {
+                uploading.value = false;
             }
         },
         onError: (errors) => {
-            addToast?.(Object.values(errors).flat().join(', ') || 'Import gagal', 'error');
-        },
-        onFinish: () => { uploading.value = false; },
+            completeStepper(false);
+            setTimeout(() => {
+                uploading.value = false;
+                addToast?.(Object.values(errors).flat().join(', ') || 'Import gagal', 'error');
+            }, 1500);
+        }
     });
 }
 
@@ -153,6 +213,17 @@ const showForceDeleteModal = ref(false);
 const forceDeleteTarget = ref(null);
 const showMultipleForceDeleteModal = ref(false);
 const selectedTrashed = ref([]);
+
+const selectAllTrashed = computed({
+    get: () => props.trashedBatches?.length > 0 && selectedTrashed.value.length === props.trashedBatches.length,
+    set: (val) => {
+        if (val && props.trashedBatches) {
+            selectedTrashed.value = props.trashedBatches.map(b => b.id);
+        } else {
+            selectedTrashed.value = [];
+        }
+    }
+});
 
 function confirmDeleteBatch(batch) {
     deleteTargetBatch.value = batch;
@@ -231,9 +302,7 @@ function executeForceDelete(batch = null) {
 function executeMultipleForceDelete() {
     if (selectedTrashed.value.length === 0) return;
 
-    router.post('/import/force-batch', {
-
-
+    router.post(route('import.forceDestroyBatch'), {
         ids: selectedTrashed.value
     }, {
         preserveScroll: true,
@@ -338,16 +407,67 @@ function formatCurrency(v) {
                 </div>
             </div>
 
-            <!-- Processing Spinner -->
+            <!-- Processing Stepper Progress -->
             <Transition name="slide-up">
-                <div v-if="uploading && !uploadResult" class="glass-card p-6">
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center">
-                            <svg class="w-5 h-5 text-rose-gold animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                        </div>
+                <div v-if="uploading && !uploadResult" class="glass-card p-6 sm:p-8 space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-rose-100/40 dark:border-white/5">
                         <div>
-                            <p class="text-plum font-medium">Memproses data mutasi...</p>
-                            <p class="text-sm text-surface-500">Parsing format bank, klasifikasi otomatis, dan deduplikasi</p>
+                            <h3 class="font-display font-bold text-lg text-plum">Pemrosesan Pipeline Keuangan</h3>
+                            <p class="text-xs text-surface-500 mt-0.5">Harap jangan menutup halaman ini selama pemrosesan berlangsung</p>
+                        </div>
+                        <!-- Active Step Counter Badge -->
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 self-start sm:self-auto shadow-glow">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>
+                            Tahap {{ currentStep }} dari 6
+                        </span>
+                    </div>
+
+                    <!-- Steps Timeline -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                        <div
+                            v-for="(step, idx) in stepStatus"
+                            :key="step.id"
+                            :class="[
+                                'flex items-start gap-3.5 p-4 rounded-2xl border transition-all duration-300',
+                                step.status === 'active' ? 'border-rose-300 dark:border-rose-500/50 bg-rose-50/20 dark:bg-rose-950/5 shadow-glow scale-[1.01]' :
+                                step.status === 'completed' ? 'border-emerald-200 dark:border-emerald-500/20 bg-emerald-50/5 dark:bg-emerald-950/5' :
+                                step.status === 'error' ? 'border-red-200 dark:border-red-500/20 bg-red-50/5 dark:bg-red-950/5' :
+                                'border-surface-200/50 dark:border-white/5 opacity-50'
+                            ]"
+                        >
+                            <!-- Circle Indicator -->
+                            <div :class="['w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300 shadow-sm',
+                                step.status === 'active' ? 'bg-rose-500 text-white shadow-glow animate-pulse-soft' :
+                                step.status === 'completed' ? 'bg-emerald-500 text-white' :
+                                step.status === 'error' ? 'bg-red-500 text-white' :
+                                'bg-cream-300 dark:bg-white/5 text-surface-500'
+                            ]">
+                                <!-- Completed Checkmark -->
+                                <svg v-if="step.status === 'completed'" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                </svg>
+                                <!-- Error Icon -->
+                                <svg v-else-if="step.status === 'error'" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                <!-- Active Spinner -->
+                                <svg v-else-if="step.status === 'active'" class="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span v-else class="text-xs font-bold">{{ idx + 1 }}</span>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="text-left min-w-0">
+                                <h4 :class="['font-semibold text-sm transition-colors',
+                                    step.status === 'active' ? 'text-rose-600 dark:text-rose-400' :
+                                    step.status === 'completed' ? 'text-emerald-600 dark:text-emerald-400' :
+                                    step.status === 'error' ? 'text-red-600 dark:text-red-400' :
+                                    'text-plum dark:text-slate-400'
+                                ]">{{ step.label }}</h4>
+                                <p class="text-xs text-surface-500 mt-1 leading-normal truncate-multiline">{{ step.desc }}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -548,6 +668,10 @@ function formatCurrency(v) {
                 </div>
                 <Transition name="expand">
                     <div v-show="showTrashed" class="mt-4 space-y-2">
+                        <label class="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-50 border border-surface-200 cursor-pointer hover:bg-surface-100 transition-colors w-fit">
+                            <input type="checkbox" v-model="selectAllTrashed" class="w-4 h-4 text-rose-500 border-rose-300 rounded focus:ring-rose-500 bg-white" />
+                            <span class="text-xs font-semibold text-surface-600">Pilih Semua ({{ trashedBatches.length }})</span>
+                        </label>
                         <div v-for="b in trashedBatches" :key="b.id" class="p-3 rounded-xl bg-red-50/50 border border-red-100 space-y-2">
                             <div class="flex items-start gap-2">
                                 <input type="checkbox" v-model="selectedTrashed" :value="b.id" class="w-4 h-4 mt-0.5 text-rose-500 border-rose-300 rounded focus:ring-rose-500 bg-white flex-shrink-0" />
@@ -610,4 +734,9 @@ function formatCurrency(v) {
 .expand-enter-active { transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1); overflow: hidden; max-height: 1200px; }
 .expand-leave-active { transition: opacity 0.2s cubic-bezier(0.5, 0, 0.75, 0), max-height 0.3s cubic-bezier(0.5, 0, 0.75, 0); overflow: hidden; max-height: 1200px; }
 .expand-enter-from, .expand-leave-to { max-height: 0 !important; opacity: 0; padding-top: 0 !important; padding-bottom: 0 !important; margin-top: 0 !important; margin-bottom: 0 !important; }
+
+.slide-up-enter-active { transition: all 0.3s ease-out; }
+.slide-up-leave-active { transition: all 0.2s ease-in; }
+.slide-up-enter-from { opacity: 0; transform: translateY(16px); }
+.slide-up-leave-to { opacity: 0; transform: translateY(-8px); }
 </style>

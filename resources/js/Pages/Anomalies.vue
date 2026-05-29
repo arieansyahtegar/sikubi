@@ -107,18 +107,18 @@ function subtypeLabel(method) {
 </script>
 
 <template>
-    <Head title="Deteksi Anomali — SIKUBI" />
+    <Head title="Pengawasan Transaksi — SIKUBI" />
     <AppLayout>
         <div class="space-y-6 animate-fade-in">
             <!-- Header -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h1 class="page-title text-lg sm:text-2xl">Deteksi Anomali</h1>
-                    <p class="text-xs sm:text-sm text-surface-600 mt-0.5">Identifikasi transaksi pemasukan & pengeluaran mencurigakan</p>
+                    <h1 class="page-title text-lg sm:text-2xl">Pengawasan Transaksi</h1>
+                    <p class="text-xs sm:text-sm text-surface-600 mt-0.5">Tinjau mutasi luar biasa dan lakukan verifikasi kepatuhan internal</p>
                 </div>
                 <button @click="runDetection" class="btn-primary text-xs !py-1.5 !px-4 sm:!py-2.5 sm:!px-5">
                     <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
-                    Jalankan Deteksi
+                    Pindai Mutasi
                 </button>
             </div>
 
@@ -144,16 +144,16 @@ function subtypeLabel(method) {
                 <div class="glass-card p-4 border-l-4 border-l-emerald-400">
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-lg">💰</span>
-                        <h3 class="text-sm font-semibold text-plum">Anomali Pemasukan</h3>
+                        <h3 class="text-sm font-semibold text-plum">Mutasi Masuk Luar Biasa</h3>
                     </div>
-                    <p class="text-xs text-surface-600">Transaksi dari 1 akun atau lebih ke Bigenmi yang mencapai <strong>Rp 10 juta</strong> (instan atau akumulasi).</p>
+                    <p class="text-xs text-surface-600">Transaksi masuk instan atau terakumulasi dalam bulan berjalan yang mencapai <strong>Rp 10 juta</strong> atau lebih.</p>
                 </div>
                 <div class="glass-card p-4 border-l-4 border-l-red-400">
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-lg">💸</span>
-                        <h3 class="text-sm font-semibold text-plum">Anomali Pengeluaran</h3>
+                        <h3 class="text-sm font-semibold text-plum">Mutasi Keluar Tidak Seimbang</h3>
                     </div>
-                    <p class="text-xs text-surface-600">Transaksi dari Bigenmi ke 1 akun atau lebih yang <strong>tidak sesuai</strong> dengan jumlah pemasukan dari akun tersebut.</p>
+                    <p class="text-xs text-surface-600">Transaksi pengeluaran dana ke suatu rekening yang <strong>tidak seimbang</strong> dengan rasio total pemasukan terkait.</p>
                 </div>
             </div>
 
@@ -225,8 +225,8 @@ function subtypeLabel(method) {
                 <!-- Empty State -->
                 <div v-if="!anomalies.data?.length" class="glass-card p-12 text-center">
                     <svg class="w-12 h-12 text-surface-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>
-                    <p class="text-surface-500 font-medium">Belum ada anomali terdeteksi.</p>
-                    <p class="text-xs text-surface-400 mt-1">Klik "Jalankan Deteksi" untuk memulai analisis pemasukan & pengeluaran.</p>
+                    <p class="text-surface-500 font-medium">Belum ada temuan resiko terdeteksi.</p>
+                    <p class="text-xs text-surface-400 mt-1">Klik "Pindai Mutasi" untuk memulai analisis kepatuhan internal.</p>
                 </div>
             </div>
         </div>

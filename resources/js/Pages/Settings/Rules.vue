@@ -207,4 +207,9 @@ function bankLabel(rule) {
     </AppLayout>
 </template>
 
-<style scoped></style>
+<style scoped>
+.slide-up-enter-active { transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+.slide-up-leave-active { transition: all 0.25s cubic-bezier(0.5, 0, 0.75, 0); }
+.slide-up-enter-from { opacity: 0; transform: translateY(16px); }
+.slide-up-leave-to { opacity: 0; transform: translateY(-8px); }
+</style>

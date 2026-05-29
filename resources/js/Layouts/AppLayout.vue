@@ -85,7 +85,10 @@ function timeAgo(iso) {
     const days = Math.floor(hrs / 24);
     return `${days} hari lalu`;
 }
-onMounted(() => document.addEventListener('click', closeNotif));
+onMounted(() => {
+    document.documentElement.classList.remove('dark');
+    document.addEventListener('click', closeNotif);
+});
 onUnmounted(() => document.removeEventListener('click', closeNotif));
 
 const userInitial = computed(() => (user.value?.name?.[0] || 'U').toUpperCase());
@@ -97,7 +100,7 @@ const pageTitle = computed(() => {
         '/dashboard': 'Dashboard',
         '/import': 'Import Data',
         '/cash-transactions': 'Transaksi Tunai',
-        '/transactions': 'Transaksi',
+        '/transactions': 'Daftar Transaksi',
         '/accounts': 'Rekening Bank',
         '/anomalies/check': 'Cek Anomali',
         '/anomalies': 'Deteksi Anomali',
@@ -118,7 +121,7 @@ const mainNav = computed(() => {
         { path: '/dashboard', label: 'Dashboard', icon: 'M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z', roles: ['DIREKTUR', 'ADMIN_KEUANGAN'] },
         { path: '/import', label: 'Import Data', icon: 'M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5', roles: ['ADMIN_KEUANGAN'] },
         { path: '/cash-transactions', label: 'Transaksi Tunai', icon: 'M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z', roles: ['DIREKTUR', 'ADMIN_KEUANGAN'] },
-        { path: '/transactions', label: 'Transaksi', icon: 'M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5', roles: ['DIREKTUR', 'ADMIN_KEUANGAN'] },
+        { path: '/transactions', label: 'Daftar Transaksi', icon: 'M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5', roles: ['DIREKTUR', 'ADMIN_KEUANGAN'] },
         { path: '/reports/print', label: 'Cetak Laporan', icon: 'M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m0 0a48.03 48.03 0 0110.5 0m-10.5 0V5.625c0-.621.504-1.125 1.125-1.125h8.25c.621 0 1.125.504 1.125 1.125v3.026', roles: ['ADMIN_KEUANGAN'] },
         { path: '/accounts', label: 'Rekening Bank', icon: 'M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z', roles: ['ADMIN_KEUANGAN'] },
         { path: '/anomalies/check', label: 'Cek Anomali', icon: 'M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z', roles: ['DIREKTUR'] },

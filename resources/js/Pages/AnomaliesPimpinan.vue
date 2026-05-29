@@ -116,14 +116,14 @@ function submitLeaderAction(flagId) {
 </script>
 
 <template>
-    <Head title="Cek Anomali — SIKUBI" />
+    <Head title="Otorisasi Mutasi — SIKUBI" />
     <AppLayout>
         <div class="space-y-6 animate-fade-in">
             <!-- Header -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h1 class="page-title text-lg sm:text-2xl">Cek Anomali Keuangan</h1>
-                    <p class="text-xs sm:text-sm text-surface-600 mt-0.5">Pantau seluruh anomali yang terdeteksi & status verifikasi Admin</p>
+                    <h1 class="page-title text-lg sm:text-2xl">Otorisasi & Pengawasan Mutasi</h1>
+                    <p class="text-xs sm:text-sm text-surface-600 mt-0.5">Tinjau transaksi tidak wajar, kepatuhan nominal, dan otorisasi mutasi luar biasa</p>
                 </div>
                 <div class="flex items-center gap-2">
                     <select v-model="selectedAccountId" @change="onAccountChange" class="filter-field !w-auto !pr-8 max-w-full sm:max-w-[200px] flex-shrink-0">
@@ -141,13 +141,13 @@ function submitLeaderAction(flagId) {
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <div class="glass-card p-4 sm:p-5 border-l-4 border-l-amber-400">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wider">Total Anomali</span>
+                        <span class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wider">Total Temuan</span>
                         <div class="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center">
-                            <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+                            <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                         </div>
                     </div>
                     <p class="stat-value text-amber-600 text-xl sm:text-2xl">{{ stats?.totalCount || 0 }}</p>
-                    <p class="text-[10px] sm:text-xs text-surface-500 mt-1">Seluruh anomali terdeteksi</p>
+                    <p class="text-[10px] sm:text-xs text-surface-500 mt-1">Transaksi terindikasi luar biasa</p>
                 </div>
                 <div class="glass-card p-4 sm:p-5 border-l-4 border-l-rose-400">
                     <div class="flex items-center justify-between mb-2">
@@ -157,27 +157,27 @@ function submitLeaderAction(flagId) {
                         </div>
                     </div>
                     <p class="stat-value text-rose-500 text-xl sm:text-2xl">{{ stats?.unreviewedCount || 0 }}</p>
-                    <p class="text-[10px] sm:text-xs text-surface-500 mt-1">Menunggu tinjauan admin</p>
+                    <p class="text-[10px] sm:text-xs text-surface-500 mt-1">Sedang diverifikasi staf admin</p>
                 </div>
                 <div class="glass-card p-4 sm:p-5 border-l-4 border-l-red-500 bg-red-50/5">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wider font-bold text-red-600">Butuh Tindakan</span>
+                        <span class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wider font-bold text-red-600">Butuh Otorisasi</span>
                         <div class="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center">
-                            <svg class="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                            <svg class="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>
                         </div>
                     </div>
                     <p class="stat-value text-red-500 text-xl sm:text-2xl">{{ stats?.needsLeaderActionCount || 0 }}</p>
-                    <p class="text-[10px] sm:text-xs text-surface-500 mt-1">Perlu tindak lanjut Pimpinan</p>
+                    <p class="text-[10px] sm:text-xs text-surface-500 mt-1">Memerlukan otorisasi Direktur</p>
                 </div>
                 <div class="glass-card p-4 sm:p-5 border-l-4 border-l-emerald-400">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wider">Terverifikasi Aman</span>
+                        <span class="text-[10px] sm:text-xs font-semibold text-surface-500 uppercase tracking-wider font-bold text-emerald-600">Otorisasi Selesai</span>
                         <div class="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center">
                             <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         </div>
                     </div>
                     <p class="stat-value text-emerald-600 text-xl sm:text-2xl">{{ stats?.reviewedCount || 0 }}</p>
-                    <p class="text-[10px] sm:text-xs text-surface-500 mt-1">Sudah ditinjau & aman</p>
+                    <p class="text-[10px] sm:text-xs text-surface-500 mt-1">Telah disetujui / diarsipkan</p>
                 </div>
             </div>
 
@@ -223,7 +223,7 @@ function submitLeaderAction(flagId) {
                                         {{ severityLabel(flag.severity) }}
                                     </span>
                                     <span class="badge text-[10px] py-0.5 px-2.5 rounded-lg bg-surface-50 text-surface-600 border border-surface-200 font-semibold">
-                                        Skor: {{ (flag.score * 100).toFixed(0) }}%
+                                        Skor Resiko: {{ (flag.score * 100).toFixed(0) }}%
                                     </span>
                                 </div>
                                 <p class="text-sm font-semibold text-plum truncate">{{ flag.transaction?.description }}</p>
@@ -272,10 +272,12 @@ function submitLeaderAction(flagId) {
                             <!-- Analysis -->
                             <div class="rounded-xl bg-white border border-rose-100/30 p-4 shadow-sm">
                                 <div class="flex items-center gap-2 mb-2">
-                                    <div class="w-6 h-6 rounded-lg bg-gradient-to-br from-violet-400 to-fuchsia-500 flex items-center justify-center">
-                                        <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" /></svg>
+                                    <div class="w-6 h-6 rounded-lg bg-slate-100 border border-slate-300 flex items-center justify-center text-slate-600">
+                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
                                     </div>
-                                    <h4 class="text-xs font-bold text-plum uppercase tracking-wider">Analisis Deteksi</h4>
+                                    <h4 class="text-xs font-bold text-plum uppercase tracking-wider">Laporan Analisis Mutasi</h4>
                                 </div>
                                 <p class="text-xs text-surface-700 leading-relaxed">{{ flag.reason }}</p>
                             </div>

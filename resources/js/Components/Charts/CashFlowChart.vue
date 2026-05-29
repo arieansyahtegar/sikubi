@@ -84,12 +84,32 @@ function buildOption() {
         series: [
             {
                 name: 'Pemasukan', type: 'bar', data: d.debitData,
-                itemStyle: { color: '#10b981', borderRadius: [4, 4, 0, 0] },
+                itemStyle: {
+                    color: {
+                        type: 'linear',
+                        x: 0, y: 0, x2: 0, y2: 1,
+                        colorStops: [
+                            { offset: 0, color: '#34d399' },
+                            { offset: 1, color: '#10b981' }
+                        ]
+                    },
+                    borderRadius: [4, 4, 0, 0]
+                },
                 barMaxWidth: isMobile ? 14 : 24,
             },
             {
                 name: 'Pengeluaran', type: 'bar', data: d.creditData,
-                itemStyle: { color: '#e11d48', borderRadius: [4, 4, 0, 0] },
+                itemStyle: {
+                    color: {
+                        type: 'linear',
+                        x: 0, y: 0, x2: 0, y2: 1,
+                        colorStops: [
+                            { offset: 0, color: '#fb7185' },
+                            { offset: 1, color: '#e11d48' }
+                        ]
+                    },
+                    borderRadius: [4, 4, 0, 0]
+                },
                 barMaxWidth: isMobile ? 14 : 24,
             },
             {

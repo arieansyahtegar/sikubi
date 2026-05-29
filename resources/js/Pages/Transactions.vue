@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import DateRangePicker from '@/Components/DateRangePicker.vue';
@@ -14,6 +14,15 @@ const categoryId = ref(props.filters?.category_id ? Number(props.filters.categor
 const accountId = ref(props.filters?.account_id || '');
 const dateFrom = ref(props.filters?.date_from || '');
 const dateTo = ref(props.filters?.date_to || '');
+
+watch(() => props.filters, (f) => {
+    categoryId.value = f?.category_id ? Number(f.category_id) : '';
+    accountId.value = f?.account_id || '';
+    search.value = f?.search || '';
+    type.value = f?.type || '';
+    dateFrom.value = f?.date_from || '';
+    dateTo.value = f?.date_to || '';
+}, { deep: true });
 
 function buildParams() {
     return {
@@ -109,12 +118,12 @@ function getCategoriesByType(type) {
 </script>
 
 <template>
-    <Head title="Transaksi — SIKUBI" />
+    <Head title="Daftar Transaksi — SIKUBI" />
     <AppLayout>
         <div class="space-y-6 animate-fade-in">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h1 class="page-title text-lg sm:text-2xl">Transaksi</h1>
+                    <h1 class="page-title text-lg sm:text-2xl">Daftar Transaksi</h1>
                     <p class="text-xs sm:text-sm text-surface-600 mt-0.5">Riwayat seluruh transaksi keuangan</p>
                 </div>
                 <button v-if="isAdmin" @click="exportCsv" :disabled="isExporting" class="btn-secondary text-xs gap-1.5 w-full sm:w-auto justify-center sm:justify-start">

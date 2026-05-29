@@ -36,7 +36,7 @@ const variantStyles = {
                 <div class="absolute inset-0 bg-plum/25 backdrop-blur-sm" />
 
                 <!-- Modal -->
-                <div class="relative w-full max-w-sm sm:max-w-md bg-white rounded-2xl shadow-2xl border border-rose-100/60 overflow-hidden animate-modal-in mx-2">
+                <div class="relative w-full max-w-sm sm:max-w-md bg-white rounded-2xl shadow-2xl border border-rose-100/60 overflow-hidden modal-content mx-2">
                     <!-- Body -->
                     <div class="p-6 text-center">
                         <!-- Icon -->
@@ -82,14 +82,18 @@ const variantStyles = {
 </template>
 
 <style scoped>
-.modal-enter-active { transition: all 0.25s ease-out; }
-.modal-leave-active { transition: all 0.15s ease-in; }
-.modal-enter-from, .modal-leave-to { opacity: 0; }
-.modal-enter-from .animate-modal-in { transform: scale(0.95) translateY(8px); }
-
-@keyframes modalIn {
-    from { transform: scale(0.95) translateY(8px); opacity: 0; }
-    to { transform: scale(1) translateY(0); opacity: 1; }
+.modal-enter-active, .modal-leave-active {
+    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.animate-modal-in { animation: modalIn 0.25s ease-out; }
+.modal-enter-active .modal-content, .modal-leave-active .modal-content {
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-enter-from, .modal-leave-to {
+    opacity: 0;
+}
+.modal-enter-from .modal-content, .modal-leave-to .modal-content {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+}
 </style>

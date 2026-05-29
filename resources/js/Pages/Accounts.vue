@@ -176,4 +176,9 @@ function submitEdit() {
     </AppLayout>
 </template>
 
-<style scoped></style>
+<style scoped>
+.slide-up-enter-active { transition: all 0.3s ease-out; }
+.slide-up-leave-active { transition: all 0.2s ease-in; }
+.slide-up-enter-from { opacity: 0; transform: translateY(16px); }
+.slide-up-leave-to { opacity: 0; transform: translateY(-8px); }
+</style>

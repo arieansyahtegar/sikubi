@@ -40,16 +40,21 @@
 
     /* ── Cards ── */
     .glass-card {
-        @apply bg-white border border-rose-100/50 rounded-2xl;
-        box-shadow: 0 2px 8px rgba(232, 99, 122, 0.06), 0 1px 3px rgba(0,0,0,0.03);
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.55);
+        border-radius: 1.25rem;
+        box-shadow: 0 8px 32px 0 rgba(232, 99, 122, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.9);
     }
     .glass-card-hover {
         @apply glass-card transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)];
     }
     .glass-card-hover:hover {
-        @apply border-rose-200/80;
-        box-shadow: 0 12px 32px rgba(232, 99, 122, 0.12), 0 4px 12px rgba(0,0,0,0.03);
-        transform: translateY(-4px);
+        border-color: rgba(232, 99, 122, 0.25);
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 16px 40px rgba(232, 99, 122, 0.08), 0 4px 16px rgba(0, 0, 0, 0.01), inset 0 1px 0 rgba(255, 255, 255, 1);
+        transform: translateY(-4px) scale(1.005);
     }
 
     /* ── Buttons ── */
@@ -196,8 +201,9 @@
     .sidebar-link-active {
         @apply flex items-center gap-3 px-4 py-2.5 rounded-xl
                text-rose-gold font-semibold text-sm;
-        background: linear-gradient(135deg, rgba(232,99,122,0.08), rgba(196,154,74,0.04));
+        background: linear-gradient(135deg, rgba(232,99,122,0.08) 0%, rgba(196,154,74,0.03) 100%);
         border: 1px solid rgba(232,99,122,0.15);
+        box-shadow: 0 4px 12px rgba(232, 99, 122, 0.03);
     }
 
     /* ── Stat Card Accent Borders ── */
@@ -281,8 +287,16 @@
     padding-bottom: 0 !important;
     margin-top: 0 !important;
     margin-bottom: 0 !important;
+    margin-bottom: 0 !important;
 }
 
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 .animate-fade-in {
+    animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     will-change: transform, opacity;
 }
+
+
