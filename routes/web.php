@@ -50,6 +50,7 @@ Route::middleware(['auth', 'verified', 'role:ADMIN_KEUANGAN'])->group(function (
     // CSV Import
     Route::get('/import', [CsvImportController::class, 'index'])->name('import.index');
     Route::post('/import', [CsvImportController::class, 'store'])->name('import.store');
+    Route::delete('/import/all', [CsvImportController::class, 'destroyAll'])->name('import.destroyAll');
     Route::delete('/import/{batch}', [CsvImportController::class, 'destroy'])->name('import.destroy');
     Route::post('/import/{id}/restore', [CsvImportController::class, 'restore'])->name('import.restore');
     Route::delete('/import/{id}/force', [CsvImportController::class, 'forceDestroy'])->name('import.forceDestroy');
@@ -71,6 +72,10 @@ Route::middleware(['auth', 'verified', 'role:ADMIN_KEUANGAN'])->group(function (
     Route::post('/settings/categories', [SettingsController::class, 'storeCategory'])->name('settings.categories.store');
     Route::delete('/settings/categories/{category}', [SettingsController::class, 'destroyCategory'])->name('settings.categories.destroy');
     Route::patch('/settings/categories/{category}/approve', [SettingsController::class, 'approveCategory'])->name('settings.categories.approve');
+
+    Route::get('/settings/rules', [SettingsController::class, 'rules'])->name('settings.rules');
+    Route::post('/settings/rules', [SettingsController::class, 'storeRule'])->name('settings.rules.store');
+    Route::delete('/settings/rules/{rule}', [SettingsController::class, 'destroyRule'])->name('settings.rules.destroy');
 });
 
 // ── Direktur only ──

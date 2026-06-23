@@ -73,7 +73,7 @@ class DashboardController extends Controller
             ->map(fn($item) => [
                 'name' => $item->category ? "{$item->category->name} (" . ($item->category->type === 'DEBIT' ? 'In' : 'Out') . ")" : 'Belum Diklasifikasi',
                 'value' => round($item->total),
-                'color' => $item->category->color ?? '#CBD5E1',
+                'color' => $item->category?->color ?? '#CBD5E1',
                 'category_id' => $item->category_id,
             ]);
 

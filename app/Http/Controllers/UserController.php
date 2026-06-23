@@ -77,6 +77,12 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
+        if ($user->id === auth()->id()) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'user' => 'Anda tidak dapat menghapus akun Anda sendiri.'
+            ]);
+        }
+
         if ($user->role === 'DIREKTUR') {
             abort(403, 'Tidak dapat menghapus akun Direktur.');
         }

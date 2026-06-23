@@ -3,15 +3,46 @@
 namespace App\Http\Controllers;
 
 use App\Models\BankAccount;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class BankAccountController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $accounts = BankAccount::withCount('transactions')->get();
+        
+        $selectedAccountId = $request->input('account_id');
+        if (!$selectedAccountId && $accounts->isNotEmpty()) {
+            $selectedAccountId = (string) $accounts->first()->id;
+        }
+        
+        $transactions = null;
+        
+        if ($selectedAccountId) {
+            $query = Transaction::where('bank_account_id', $selectedAccountId)
+                ->with('category:id,name,color')
+                ->orderByDesc('transaction_date');
+                
+            if ($dateFrom = $request->input('date_from')) {
+                $query->where('transaction_date', '>=', $dateFrom);
+            }
+            if ($dateTo = $request->input('date_to')) {
+                $query->where('transaction_date', '<=', $dateTo);
+            }
+            
+            $transactions = $query->paginate(20)->withQueryString();
+        }
+
         return Inertia::render('Accounts', [
-            'accounts' => BankAccount::withCount('transactions')->get(),
+            'accounts' => $accounts,
+            'transactions' => $transactions,
+            'filters' => [
+                'account_id' => $selectedAccountId,
+                'date_from' => $request->input('date_from'),
+                'date_to' => $request->input('date_to'),
+            ],
         ]);
     }
 
@@ -30,6 +61,12 @@ class BankAccountController extends Controller
 
     public function destroy(BankAccount $account)
     {
+        if ($account->transactions()->exists()) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'bank_account' => 'Tidak dapat menghapus rekening bank yang memiliki transaksi aktif. Selesaikan atau hapus transaksi terlebih dahulu.'
+            ]);
+        }
+
         $account->delete();
         return back();
     }

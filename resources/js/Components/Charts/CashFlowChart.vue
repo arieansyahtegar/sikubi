@@ -174,9 +174,24 @@ const hasData = computed(() => {
 </script>
 
 <template>
-    <div v-if="hasData" ref="chartRef" class="w-full h-full min-h-[240px]"></div>
-    <div v-else class="w-full h-full min-h-[240px] flex items-center justify-center text-surface-400 text-sm select-none">
-        Belum ada data transaksi
+    <div class="relative w-full h-full min-h-[240px] flex flex-col items-center justify-center">
+        <!-- Chart Container -->
+        <div v-show="hasData" ref="chartRef" class="w-full h-full min-h-[240px]"></div>
+
+        <!-- Premium Empty State -->
+        <div v-if="!hasData" class="flex flex-col items-center justify-center p-6 text-center animate-scale-in">
+            <!-- Icon with beautiful background gradient -->
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-rose-50 to-amber-50/50 flex items-center justify-center mb-4 border border-rose-100/40 shadow-soft">
+                <svg class="w-8 h-8 text-rose-gold/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
+                </svg>
+            </div>
+            
+            <h4 class="text-sm font-semibold text-plum mb-1">Belum Ada Data Arus Kas</h4>
+            <p class="text-xs text-surface-500 max-w-[240px] leading-relaxed">
+                Tidak ditemukan data pemasukan atau pengeluaran untuk periode dan rekening ini.
+            </p>
+        </div>
     </div>
 </template>
 

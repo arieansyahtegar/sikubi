@@ -52,10 +52,14 @@ class CsvImportController extends Controller
         $filesProcessed = [];
 
         foreach ($request->file('csv_files') as $file) {
-            $ext = strtolower($file->getClientOriginalExtension());
-            if (!in_array($ext, ['csv', 'txt', 'pdf'])) continue;
-
             $fileName = $file->getClientOriginalName();
+            $ext = strtolower($file->getClientOriginalExtension());
+            if (!in_array($ext, ['csv', 'txt', 'pdf'])) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'csv_files' => "Format file {$fileName} tidak didukung. Hanya file CSV, TXT, dan PDF yang diperbolehkan."
+                ]);
+            }
+
             $filesProcessed[] = $fileName;
 
             try {
@@ -155,6 +159,7 @@ class CsvImportController extends Controller
     {
         $batch = ImportBatch::onlyTrashed()->findOrFail($id);
         $fileName = $batch->file_name;
+        $accountId = $batch->bank_account_id;
 
         // Restore transactions
         Transaction::onlyTrashed()
@@ -163,6 +168,24 @@ class CsvImportController extends Controller
 
         // Restore the batch
         $batch->restore();
+
+        // Restore anomaly flags
+        $detector = app(\App\Services\AnomalyDetectionService::class);
+        $results = $detector->runFullDetection($accountId);
+        foreach ($results as $r) {
+            $exists = \App\Models\AnomalyFlag::where('transaction_id', $r['transaction_id'])
+                ->where('detection_method', $r['type'] . '_' . $r['subtype'])
+                ->exists();
+            if (!$exists) {
+                \App\Models\AnomalyFlag::create([
+                    'transaction_id' => $r['transaction_id'],
+                    'detection_method' => $r['type'] . '_' . $r['subtype'],
+                    'score' => $r['score'],
+                    'severity' => $r['severity'],
+                    'reason' => $r['reason'],
+                ]);
+            }
+        }
 
         // Recalculate rule hit_counts
         $rules = \App\Models\ClassificationRule::all();
@@ -261,8 +284,76 @@ class CsvImportController extends Controller
         ]);
     }
 
+    /**
+     * Permanently delete all import history batches and their associated transactions and flags.
+     */
+    public function destroyAll()
+    {
+        $batches = ImportBatch::withTrashed()->get();
+        $batchCount = $batches->count();
+
+        if ($batchCount === 0) {
+            return back()->with('importResult', [
+                'status' => 'DELETED',
+                'bank_format' => 'Hapus Semua',
+                'periode' => '',
+                'total_rows' => 0,
+                'success_rows' => 0,
+                'failed_rows' => 0,
+                'duplicate_rows' => 0,
+                'failed_details' => [],
+                'message' => "Tidak ada riwayat import yang dapat dihapus.",
+            ]);
+        }
+
+        $txIds = Transaction::withTrashed()
+            ->whereIn('import_batch_id', $batches->pluck('id'))
+            ->pluck('id');
+        $txCount = $txIds->count();
+
+        // 1. Permanently delete associated anomaly flags
+        \App\Models\AnomalyFlag::whereIn('transaction_id', $txIds)->forceDelete();
+
+        // 2. Permanently delete associated duplicate transactions
+        \App\Models\DuplicateTransaction::whereIn('import_batch_id', $batches->pluck('id'))->forceDelete();
+
+        // 3. Permanently delete transactions
+        Transaction::withTrashed()->whereIn('import_batch_id', $batches->pluck('id'))->forceDelete();
+
+        // 4. Permanently delete batches
+        ImportBatch::withTrashed()->whereIn('id', $batches->pluck('id'))->forceDelete();
+
+        // 5. Recalculate rule hit_counts
+        $rules = \App\Models\ClassificationRule::all();
+        foreach ($rules as $rule) {
+            $rule->update([
+                'hit_count' => Transaction::where('classification_method', 'RULE_BASED')
+                    ->where('category_id', $rule->category_id)
+                    ->count(),
+            ]);
+        }
+
+        Log::info("Permanently deleted all import history: {$batchCount} batches, {$txCount} transactions.");
+
+        return back()->with('importResult', [
+            'status' => 'DELETED',
+            'bank_format' => 'Hapus Semua Permanen',
+            'periode' => '',
+            'total_rows' => $txCount,
+            'success_rows' => 0,
+            'failed_rows' => 0,
+            'duplicate_rows' => 0,
+            'failed_details' => [],
+            'message' => "Berhasil menghapus permanen seluruh riwayat import ({$batchCount} file, {$txCount} transaksi).",
+        ]);
+    }
+
     public function resolveBatch(Request $request)
     {
+        $request->validate([
+            'action' => 'required|in:IMPORT,DISMISS',
+        ]);
+
         $ids = $request->input('ids', []);
         $action = $request->input('action'); // 'IMPORT' or 'DISMISS'
 
@@ -295,7 +386,7 @@ class CsvImportController extends Controller
                 $duplicate->update(['status' => 'IMPORTED']);
                 
                 // Also classify it
-                $classification = $classifier->classify($duplicate->description, $duplicate->type);
+                $classification = $classifier->classify($duplicate->description, $duplicate->type, $duplicate->bank_account_id);
                 \App\Models\Transaction::where('deduplication_hash', $newHash)
                     ->update([
                         'category_id' => $classification['category_id'],

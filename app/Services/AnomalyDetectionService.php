@@ -14,14 +14,11 @@ class AnomalyDetectionService
      * either in a single transaction or accumulated across multiple transactions.
      * Groups by sender description keyword to identify unique senders.
      */
-    public function detectIncomeAnomalies(?int $bankAccountId = null): array
+    public function detectIncomeAnomalies(mixed $bankAccountId = null): array
     {
         $threshold = 10_000_000; // Rp 10 juta
 
-        $query = Transaction::debit(); // DEBIT = money coming IN to Bigenmi
-        if ($bankAccountId) {
-            $query->where('bank_account_id', $bankAccountId);
-        }
+        $query = Transaction::debit()->forAccount($bankAccountId);
 
         // Group transactions by description to identify senders
         $transactions = $query->with('bankAccount:id,bank_name,account_alias')
@@ -60,11 +57,14 @@ class AnomalyDetectionService
             $totalAmount = $txGroup->sum(fn($tx) => (float) $tx->amount);
 
             if ($totalAmount >= $threshold && $txGroup->count() > 1) {
-                // Only flag if NOT already flagged as instant (avoid duplicates)
-                $hasInstant = $txGroup->contains(fn($tx) => (float) $tx->amount >= $threshold);
-                if ($hasInstant && $txGroup->count() <= 1) continue;
+                // Find representative transaction from non-instant transactions to avoid double flagging
+                $representativeTx = $txGroup->filter(fn($tx) => (float) $tx->amount < $threshold)
+                    ->sortByDesc('amount')
+                    ->first();
 
-                $representativeTx = $txGroup->sortByDesc('amount')->first();
+                if (!$representativeTx) {
+                    continue;
+                }
 
                 $anomalies[] = [
                     'type' => 'INCOME',
@@ -93,40 +93,37 @@ class AnomalyDetectionService
      * exceeds the total incoming from that same account.
      * This flags imbalanced relationships (paying more than received).
      */
-    public function detectExpenseAnomalies(?int $bankAccountId = null): array
+    public function detectExpenseAnomalies(mixed $bankAccountId = null): array
     {
         // Get all transactions grouped by normalized counterparty
-        $debitQuery = Transaction::debit(); // Incoming
-        $creditQuery = Transaction::credit(); // Outgoing
-
-        if ($bankAccountId) {
-            $debitQuery->where('bank_account_id', $bankAccountId);
-            $creditQuery->where('bank_account_id', $bankAccountId);
-        }
-
-        $incoming = $debitQuery->get();
-        $outgoing = $creditQuery->with('bankAccount:id,bank_name,account_alias')->get();
+        $debitQuery = Transaction::debit()->forAccount($bankAccountId);
+        $creditQuery = Transaction::credit()->forAccount($bankAccountId);
 
         // Build incoming totals by counterparty
         $incomingByParty = [];
-        foreach ($incoming as $tx) {
-            $party = $this->normalizeSender($tx->description);
-            if ($party === 'LAINNYA') continue;
-            $incomingByParty[$party] = ($incomingByParty[$party] ?? 0) + (float) $tx->amount;
-        }
+        $debitQuery->chunk(1000, function ($transactions) use (&$incomingByParty) {
+            foreach ($transactions as $tx) {
+                $party = $this->normalizeSender($tx->description);
+                if ($party === 'LAINNYA') continue;
+                $incomingByParty[$party] = ($incomingByParty[$party] ?? 0) + (float) $tx->amount;
+            }
+        });
 
         // Build outgoing totals by counterparty
         $outgoingByParty = [];
         $outgoingTxByParty = [];
-        foreach ($outgoing as $tx) {
-            $party = $this->normalizeSender($tx->description);
-            if ($party === 'LAINNYA') continue;
-            $outgoingByParty[$party] = ($outgoingByParty[$party] ?? 0) + (float) $tx->amount;
-            if (!isset($outgoingTxByParty[$party])) {
-                $outgoingTxByParty[$party] = collect();
+        $outgoingCountByParty = [];
+        $creditQuery->with('bankAccount:id,bank_name,account_alias')->chunk(1000, function ($transactions) use (&$outgoingByParty, &$outgoingTxByParty, &$outgoingCountByParty) {
+            foreach ($transactions as $tx) {
+                $party = $this->normalizeSender($tx->description);
+                if ($party === 'LAINNYA') continue;
+                $outgoingByParty[$party] = ($outgoingByParty[$party] ?? 0) + (float) $tx->amount;
+                $outgoingCountByParty[$party] = ($outgoingCountByParty[$party] ?? 0) + 1;
+                if (!isset($outgoingTxByParty[$party]) || (float)$tx->amount > (float)$outgoingTxByParty[$party]->amount) {
+                    $outgoingTxByParty[$party] = $tx;
+                }
             }
-            $outgoingTxByParty[$party]->push($tx);
-        }
+        });
 
         $anomalies = [];
 
@@ -136,9 +133,8 @@ class AnomalyDetectionService
             // Flag if outgoing exceeds incoming (paying more than received)
             if ($totalOut > $totalIn && $totalOut >= 1_000_000) {
                 $excess = $totalOut - $totalIn;
-                $txCollection = $outgoingTxByParty[$party];
-                $representativeTx = $txCollection->sortByDesc('amount')->first();
-                $txCount = $txCollection->count();
+                $representativeTx = $outgoingTxByParty[$party];
+                $txCount = $outgoingCountByParty[$party] ?? 1;
 
                 $severity = 'MEDIUM';
                 if ($excess >= 50_000_000) $severity = 'HIGH';
@@ -180,7 +176,7 @@ class AnomalyDetectionService
     /**
      * Run full anomaly detection (both income and expense).
      */
-    public function runFullDetection(?int $bankAccountId = null): array
+    public function runFullDetection(mixed $bankAccountId = null): array
     {
         $income = $this->detectIncomeAnomalies($bankAccountId);
         $expense = $this->detectExpenseAnomalies($bankAccountId);

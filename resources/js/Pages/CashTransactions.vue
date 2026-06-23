@@ -152,14 +152,14 @@ function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: '
             <!-- Filters -->
             <div class="glass-card p-4 sm:p-5">
                 <div class="space-y-2.5 mb-5">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <input v-model="search" @keyup.enter="applyFilters" type="text" placeholder="Cari deskripsi..." class="filter-field flex-1 min-w-[140px]" />
-                        <select v-model="type" @change="applyFilters" class="filter-field !w-auto min-w-[120px]">
+                    <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+                        <input v-model="search" @keyup.enter="applyFilters" type="text" placeholder="Cari deskripsi..." class="filter-field col-span-2 sm:flex-1 w-full" />
+                        <select v-model="type" @change="applyFilters" class="filter-field col-span-1 w-full sm:!w-auto sm:min-w-[120px]">
                             <option value="">Semua Tipe</option>
                             <option value="DEBIT">Pendapatan</option>
                             <option value="CREDIT">Pengeluaran</option>
                         </select>
-                        <button @click="applyFilters" class="btn-primary text-xs !py-1.5 !px-4">Cari</button>
+                        <button @click="applyFilters" class="btn-primary text-xs !py-1.5 !px-4 col-span-1 w-full sm:w-auto justify-center">Cari</button>
                     </div>
                     <DateRangePicker :initial-from="filters?.date_from" :initial-to="filters?.date_to" @update="onDateUpdate" />
                 </div>

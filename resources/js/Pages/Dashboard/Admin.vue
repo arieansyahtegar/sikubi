@@ -270,21 +270,23 @@ function formatDatetime(d) { return new Date(d).toLocaleDateString('id-ID', { da
                                     </div>
                                 </div>
                                 <Transition name="expand">
-                                    <div v-show="!isCollapsed('recent_tx')" class="p-4 sm:p-6 space-y-2 max-h-[340px] overflow-y-auto">
-                                        <div v-for="tx in recentTransactions" :key="tx.id" class="flex items-center gap-3 p-3 rounded-xl hover:bg-cream-200/50 transition-colors">
-                                            <div :class="['w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0', tx.type === 'DEBIT' ? 'bg-emerald-50' : 'bg-red-50']">
-                                                <svg v-if="tx.type === 'DEBIT'" class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" /></svg>
-                                                <svg v-else class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" /></svg>
+                                    <div v-show="!isCollapsed('recent_tx')" class="p-4 sm:p-6 h-[320px] sm:h-[300px] overflow-y-auto">
+                                        <div v-if="recentTransactions && recentTransactions.length > 0" class="space-y-2">
+                                            <div v-for="tx in recentTransactions" :key="tx.id" class="flex items-center gap-3 p-3 rounded-xl hover:bg-cream-200/50 transition-colors">
+                                                <div :class="['w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0', tx.type === 'DEBIT' ? 'bg-emerald-50' : 'bg-red-50']">
+                                                    <svg v-if="tx.type === 'DEBIT'" class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" /></svg>
+                                                    <svg v-else class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" /></svg>
+                                                </div>
+                                                <div class="flex-1 min-w-0">
+                                                    <p class="text-sm text-plum truncate">{{ tx.description }}</p>
+                                                    <p class="text-xs text-surface-500">{{ formatDate(tx.transaction_date) }}<span v-if="tx.category"> · {{ tx.category.name }}</span><span v-if="tx.bank_account"> · <span :class="['font-medium', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">{{ tx.bank_account.account_alias || tx.bank_account.bank_name }}</span></span><span v-else> · <span :class="['font-medium', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">Transaksi Tunai</span></span></p>
+                                                </div>
+                                                <p :class="['text-sm font-semibold whitespace-nowrap', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
+                                                    {{ tx.type === 'DEBIT' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
+                                                </p>
                                             </div>
-                                            <div class="flex-1 min-w-0">
-                                                <p class="text-sm text-plum truncate">{{ tx.description }}</p>
-                                                <p class="text-xs text-surface-500">{{ formatDate(tx.transaction_date) }}<span v-if="tx.category"> · {{ tx.category.name }}</span><span v-if="tx.bank_account"> · <span :class="['font-medium', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">{{ tx.bank_account.account_alias || tx.bank_account.bank_name }}</span></span><span v-else> · <span :class="['font-medium', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">Transaksi Tunai</span></span></p>
-                                            </div>
-                                            <p :class="['text-sm font-semibold whitespace-nowrap', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
-                                                {{ tx.type === 'DEBIT' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
-                                            </p>
                                         </div>
-                                        <div v-if="!recentTransactions?.length" class="text-center py-10">
+                                        <div v-else class="h-full flex flex-col items-center justify-center text-center pb-6">
                                             <svg class="w-12 h-12 text-surface-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" /></svg>
                                             <p class="text-sm text-surface-400">Belum ada transaksi</p>
                                         </div>

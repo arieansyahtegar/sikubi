@@ -182,7 +182,7 @@ provide('addToast', addToast);
                 </div>
                 <div :class="['min-w-0 transition-opacity duration-300', isSidebarCollapsed ? 'lg:hidden' : '']">
                     <h1 class="text-lg font-sans font-semibold text-plum tracking-tight truncate">SIKUBI</h1>
-                    <p class="text-[10px] text-surface-500 font-medium tracking-wide uppercase truncate">Sistem Keuangan</p>
+                    <p class="text-[10px] text-surface-500 font-medium tracking-wide uppercase truncate">Sistem Keuangan Bigenmi</p>
                 </div>
             </div>
 
@@ -352,7 +352,7 @@ provide('addToast', addToast);
         </div>
 
         <!-- Toast container -->
-        <div class="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-sm w-full sm:w-auto">
+        <div class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 z-[100] flex flex-col gap-2 max-w-sm w-[calc(100vw-32px)] sm:w-auto">
             <TransitionGroup name="slide-up">
                 <div
                     v-for="toast in toasts" :key="toast.id"

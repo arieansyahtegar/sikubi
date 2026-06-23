@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, watch, onMounted, onBeforeUnmount, nextTick, computed } from 'vue';
 import * as echarts from 'echarts/core';
 import { PieChart } from 'echarts/charts';
 import { TooltipComponent, LegendComponent } from 'echarts/components';
@@ -11,6 +11,10 @@ const emit = defineEmits(['categoryClick']);
 const props = defineProps({ data: Array });
 const chartRef = ref(null);
 let chart = null;
+
+const hasData = computed(() => {
+    return props.data && props.data.length > 0 && props.data.some(item => (item.value || 0) > 0);
+});
 
 function formatRp(val) {
     if (val == null) return 'Rp 0';
@@ -153,5 +157,24 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div ref="chartRef" class="w-full h-full min-h-[240px]"></div>
+    <div class="relative w-full h-full min-h-[240px] flex flex-col items-center justify-center">
+        <!-- Chart Container -->
+        <div v-show="hasData" ref="chartRef" class="w-full h-full min-h-[240px]"></div>
+
+        <!-- Premium Empty State -->
+        <div v-if="!hasData" class="flex flex-col items-center justify-center p-6 text-center animate-scale-in">
+            <!-- Icon with beautiful background gradient -->
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-rose-50 to-amber-50/50 flex items-center justify-center mb-4 border border-rose-100/40 shadow-soft">
+                <svg class="w-8 h-8 text-rose-gold/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
+                </svg>
+            </div>
+            
+            <h4 class="text-sm font-semibold text-plum mb-1">Belum Ada Data Transaksi</h4>
+            <p class="text-xs text-surface-500 max-w-[240px] leading-relaxed">
+                Tidak ditemukan transaksi untuk periode dan rekening yang Anda pilih.
+            </p>
+        </div>
+    </div>
 </template>

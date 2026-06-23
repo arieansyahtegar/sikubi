@@ -2,7 +2,28 @@
 
 ## Ringkasan Eksekutif
 
-**Sikubi** adalah sistem web berbasis Laravel 12 yang dirancang untuk mengelola, mengklasifikasi, dan menganalisis mutasi rekening bank secara otomatis. Sistem ini mendukung **import mutasi dari BCA dan BRI**, melakukan **klasifikasi transaksi otomatis**, serta **mendeteksi anomali keuangan** untuk membantu pengambilan keputusan manajemen.
+**Sikubi** adalah sistem web berbasis Laravel 12 yang dirancang untuk mengelola, mengklasifikasi, dan menganalisis mutasi rekening bank secara otomatis. Sistem ini mendukung **import mutasi dari BCA dan BRI**, melakukan **klasifikasi transaksi otomatis**, serta **mendeteksi anomali keuangan** untuk membantu pengambilan keputusan manajemen dengan antarmuka pengguna premium yang sangat responsif.
+
+---
+
+## Peningkatan Antarmuka Premium (UI/UX Elite)
+
+SIKUBI telah ditingkatkan dengan standar estetika visual dan kegunaan tingkat tinggi:
+
+### 1. 🌸 Glassmorphism Light Theme (Bigenmi Sakura Theme)
+* **Estetika Elegan:** Skema warna eksklusif perpaduan krem hangat (`#FDF6EF`), teks plum gelap, dan gradasi emas merah-muda (*rose gold gradients*).
+* **Efek Kaca Transklusif:** Kartu informasi (`glass-card`) dirancang menggunakan latar transparan putih (`rgba(255, 255, 255, 0.82)`) yang dipadukan dengan blur latar belakang yang intens (`backdrop-filter: blur(16px)`) dan border tipis bercahaya.
+* **Mikro-Animasi Hover:** Sentuhan interaksi dinamis saat kursor menyentuh kartu (`translateY(-4px)` dan `scale-[1.005]`) dengan bayangan mendalam secara real-time.
+* **Sidebar Active Link:** Aksen navigasi aktif dengan garis batas gradasi berpendar emas bercahaya dan warna latar belakang ceri transklusif.
+
+### 2. ⏳ Visual Stepper Progress UI (Import Halaman)
+* **6-Stage Interactive Pipeline:** Mengganti spinner statis membosankan dengan alur stepper interaktif (Unggah -> Validasi Enkripsi -> Ekstraksi Mutasi -> Deduplikasi -> Klasifikasi Cerdas -> Selesai).
+* **Integrasi Callback Backend:** Animasi visual stepper sinkron dengan respons backend Inertia, menahan pemrosesan pada status klasifikasi otomatis sebelum menyalakan tanda centang hijau bersinar.
+
+### 3. 📱 Mobile Responsiveness Premium Polish
+* **Grid Filter Responsif:** Filter pencarian di halaman *Daftar Transaksi* dan *Transaksi Tunai* secara otomatis beralih menjadi Grid seluler (`grid grid-cols-2`). Kolom pencarian deskripsi memanjang penuh, sedangkan filter dropdown terbagi 50:50 secara simetris dengan tombol cari membentang penuh di bawahnya.
+* **Toast Notification Terpusat:** Box pesan sukses/gagal dipusatkan secara presisi di tengah bawah layar mobile dengan padding kiri-kanan merata (`w-[calc(100vw-32px)] left-4 right-4`), memberikan pengalaman native yang seimbang.
+* **Tombol Header Fleksibel:** Tombol-tombol aksi pada menu kelola kategori dan otorisasi pimpinan menyesuaikan secara dinamis agar bebas dari tumpang tindih elemen visual di handphone.
 
 ---
 
@@ -12,10 +33,10 @@
 - **KPI Keuangan**: Total pemasukan (debit), pengeluaran (kredit), arus kas bersih, jumlah transaksi
 - **Grafik Arus Kas**: Visualisasi harian, bulanan, dan tahunan menggunakan ECharts
 - **Breakdown Kategori**: Distribusi transaksi berdasarkan kategori (pie chart)
-- **Transaksi Terbaru**: Ringkasan 8 transaksi terakhir
+- **Transaksi Terbaru**: Ringkasan 8 transaksi terakhir dengan penyesuaian warna highlight sumber rekening sesuai jenis transaksi
 - **Filter Multi-Rekening**: Pilih rekening bank spesifik untuk analisis
 
-### 2. Import Mutasi Bank (CSV)
+### 2. Import Mutasi Bank (CSV/PDF)
 - **Auto-detect format**: Otomatis mendeteksi format BCA atau BRI
 - **Parsing cerdas**: Menangani berbagai format tanggal, kolom, dan encoding
 - **Deduplikasi**: Mencegah duplikasi data menggunakan hash SHA-256
@@ -46,12 +67,7 @@
 - **Severity**: HIGH jika selisih ≥ Rp 50 juta atau tidak ada pemasukan sama sekali
 
 #### Normalisasi Sender
-Sistem mengekstrak nama pengirim/penerima dari deskripsi transaksi bank dengan pattern recognition untuk:
-- TRSF E-BANKING
-- BI-FAST
-- SWITCHING
-- KR OTOMATIS
-- Dan format lainnya
+Sistem mengekstrak nama pengirim/penerima dari deskripsi transaksi bank dengan pattern recognition untuk format TRSF E-BANKING, BI-FAST, SWITCHING, KR OTOMATIS, dan format lainnya.
 
 ### 5. Manajemen Rekening Bank
 - CRUD multi-rekening (bank name, account number, alias)

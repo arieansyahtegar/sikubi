@@ -136,7 +136,9 @@ class PdfToCsvService
                 $year = $m[1];
                 break;
             }
-            if (preg_match('/\b(20\d{2})\b/', $line, $m)) {
+            if (preg_match('/\b\d{1,2}[-\/\s](?:\d{1,2}|[A-Za-z]+)[-\/\s](20\d{2})\b/i', $line, $m)) {
+                $year = $m[1];
+            } elseif (preg_match('/\b(20\d{2})[-\/\s]\d{1,2}[-\/\s]\d{1,2}\b/', $line, $m)) {
                 $year = $m[1];
             }
         }
@@ -338,75 +340,190 @@ class PdfToCsvService
 
 
 
-    /**
-     * BRI PDF statement format.
-     * Pattern: DD Mon YYYY, HH:MM:SS  REMARK  DEBIT  CREDIT  BALANCE
-     */
     private function tryBriPdf(array $lines): array
     {
         $transactions = [];
-        $headerArea = strtoupper(implode(' ', array_slice($lines, 0, min(20, count($lines)))));
+        $headerArea = strtoupper(implode(' ', array_slice($lines, 0, min(30, count($lines)))));
         $isBri = str_contains($headerArea, 'BRI') ||
                  str_contains($headerArea, 'BANK RAKYAT') ||
-                 str_contains($headerArea, 'POSTING DATE');
+                 str_contains($headerArea, 'POSTING DATE') ||
+                 str_contains($headerArea, 'STATEMENT OF FINANCIAL') ||
+                 str_contains($headerArea, 'FINANSIAL');
 
         if (!$isBri) return [];
 
+        // Check if this is the new BRI format (Format B: date like "20/04/26" or "20/04/2026")
+        $formatB = false;
         foreach ($lines as $line) {
-            // BRI date: "03 Mar 2026, 02:28:56  REMARK  DEBIT  CREDIT  BALANCE"
-            if (preg_match('/^(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}),?\s*[\d:]*\s+(.+)/i', $line, $m)) {
-                $dateStr = trim($m[1]);
-                $rest = trim($m[2]);
+            if (preg_match('/^\d{2}\/\d{2}\/\d{2}(?:\s+\d{2}:\d{2}:\d{2})?\s+/', $line)) {
+                $formatB = true;
+                break;
+            }
+        }
 
-                try {
-                    $date = Carbon::createFromFormat('d M Y', $dateStr)->format('Y-m-d');
-                } catch (\Exception $e) {
+        if ($formatB) {
+            $currentTx = null;
+            foreach ($lines as $line) {
+                $upper = strtoupper($line);
+                // Refined header/footer checks to avoid matching transaction descriptions containing words like "Kredit" or "Debit"
+                $trimmedUpper = trim($upper);
+                if (str_contains($trimmedUpper, 'LAPORAN TRANSAKSI') || 
+                    str_contains($trimmedUpper, 'STATEMENT OF FINANCIAL') ||
+                    str_contains($trimmedUpper, 'TANGGAL TRANSAKSI') ||
+                    str_contains($trimmedUpper, 'TRANSACTION DATE') ||
+                    str_contains($trimmedUpper, 'URAIAN TRANSAKSI') ||
+                    str_contains($trimmedUpper, 'TRANSACTION DESCRIPTION') ||
+                    $trimmedUpper === 'TELLER' ||
+                    $trimmedUpper === 'USER ID' ||
+                    $trimmedUpper === 'TELLER/USER ID' ||
+                    $trimmedUpper === 'DEBET' ||
+                    $trimmedUpper === 'DEBIT' ||
+                    $trimmedUpper === 'KREDIT' ||
+                    $trimmedUpper === 'CREDIT' ||
+                    $trimmedUpper === 'SALDO' ||
+                    $trimmedUpper === 'BALANCE' ||
+                    str_starts_with($trimmedUpper, 'SALDO AWAL') ||
+                    str_starts_with($trimmedUpper, 'OPENING BALANCE') ||
+                    str_starts_with($trimmedUpper, 'TOTAL TRANSAKSI') ||
+                    str_starts_with($trimmedUpper, 'SALDO AKHIR') ||
+                    str_starts_with($trimmedUpper, 'CLOSING BALANCE') ||
+                    str_contains($trimmedUpper, 'CREATED BY BRIMO') ||
+                    str_contains($trimmedUpper, 'HALAMAN') ||
+                    str_contains($trimmedUpper, 'PAGE') ||
+                    str_contains($trimmedUpper, 'STATEMENTBRIMO') ||
+                    str_contains($trimmedUpper, 'RII 6084')
+                ) {
                     continue;
                 }
 
-                // Try to split rest into: description, debit, credit, balance
-                // Pattern: description  amount1  amount2  amount3
-                if (preg_match('/^(.+?)\s+([\d,.]+)\s+([\d,.]+)\s+([\d,.]+)\s*$/', $rest, $am)) {
-                    $desc = trim($am[1]);
-                    $debit = $this->cleanAmount($am[2]);
-                    $credit = $this->cleanAmount($am[3]);
-                    $balance = $this->cleanAmount($am[4]);
+                // Match date at start (strictly 2-digit year for transaction dates to avoid matching statement print timestamp)
+                if (preg_match('/^(\d{2}\/\d{2}\/\d{2})(?!\d)(?:\s+(\d{2}:\d{2}:\d{2}))?\s*(.*)$/', $line, $m)) {
+                    if ($currentTx) {
+                        $transactions[] = $currentTx;
+                    }
 
-                    if ($credit > 0) {
-                        $transactions[] = [
-                            'date' => $date,
-                            'description' => $desc,
-                            'amount' => $credit,
-                            'type' => 'DEBIT', // credit = money in
-                            'balance' => $balance,
-                            'branch' => '0000',
-                        ];
-                    } elseif ($debit > 0) {
-                        $transactions[] = [
-                            'date' => $date,
-                            'description' => $desc,
-                            'amount' => $debit,
-                            'type' => 'CREDIT', // debit = money out
-                            'balance' => $balance,
-                            'branch' => '0000',
-                        ];
+                    $dateStr = $m[1];
+                    try {
+                        $date = Carbon::createFromFormat('d/m/y', $dateStr)->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        $date = null;
+                    }
+
+                    if (!$date) continue;
+
+                    $currentTx = [
+                        'date' => $date,
+                        'description' => trim($m[3]),
+                        'amount' => 0,
+                        'type' => null,
+                        'balance' => 0,
+                        'branch' => '0000',
+                    ];
+
+                    if (preg_match('/^(.*?)\s+(?:(\S+)\s+)?([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s*$/', $currentTx['description'], $am)) {
+                        $currentTx['description'] = trim($am[1]);
+                        $debit = $this->cleanAmount($am[3]);
+                        $credit = $this->cleanAmount($am[4]);
+                        $currentTx['balance'] = $this->cleanAmount($am[5]);
+
+                        if ($credit > 0) {
+                            $currentTx['type'] = 'DEBIT';
+                            $currentTx['amount'] = $credit;
+                        } elseif ($debit > 0) {
+                            $currentTx['type'] = 'CREDIT';
+                            $currentTx['amount'] = $debit;
+                        }
+
+                        $transactions[] = $currentTx;
+                        $currentTx = null;
                     }
                     continue;
                 }
 
-                // Simpler: description  amount
-                if (preg_match('/^(.+?)\s+([\d,.]+)\s*$/', $rest, $am)) {
-                    $desc = trim($am[1]);
-                    $amount = $this->cleanAmount($am[2]);
-                    if ($amount > 0) {
-                        $transactions[] = [
-                            'date' => $date,
-                            'description' => $desc,
-                            'amount' => $amount,
-                            'type' => $this->guessType($desc, $amount),
-                            'balance' => 0,
-                            'branch' => '0000',
-                        ];
+                if ($currentTx) {
+                    if (preg_match('/^(?:(.*)\s+)?(?:(\S+)\s+)?([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s*$/', $line, $am)) {
+                        $descRemainder = trim($am[1] ?? '');
+                        if ($descRemainder !== '') {
+                            $currentTx['description'] .= ' ' . $descRemainder;
+                        }
+                        $debit = $this->cleanAmount($am[3]);
+                        $credit = $this->cleanAmount($am[4]);
+                        $currentTx['balance'] = $this->cleanAmount($am[5]);
+
+                        if ($credit > 0) {
+                            $currentTx['type'] = 'DEBIT';
+                            $currentTx['amount'] = $credit;
+                        } elseif ($debit > 0) {
+                            $currentTx['type'] = 'CREDIT';
+                            $currentTx['amount'] = $debit;
+                        }
+
+                        $currentTx['description'] = preg_replace('/\s+/', ' ', trim($currentTx['description']));
+                        $transactions[] = $currentTx;
+                        $currentTx = null;
+                    } else {
+                        $currentTx['description'] .= ' ' . $line;
+                    }
+                }
+            }
+
+            if ($currentTx) {
+                $transactions[] = $currentTx;
+            }
+        } else {
+            // Original format (Format A)
+            foreach ($lines as $line) {
+                if (preg_match('/^(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}),?\s*[\d:]*\s+(.+)/i', $line, $m)) {
+                    $dateStr = trim($m[1]);
+                    $rest = trim($m[2]);
+
+                    try {
+                        $date = Carbon::createFromFormat('d M Y', $dateStr)->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        continue;
+                    }
+
+                    if (preg_match('/^(.+?)\s+([\d,.]+)\s+([\d,.]+)\s+([\d,.]+)\s*$/', $rest, $am)) {
+                        $desc = trim($am[1]);
+                        $debit = $this->cleanAmount($am[2]);
+                        $credit = $this->cleanAmount($am[3]);
+                        $balance = $this->cleanAmount($am[4]);
+
+                        if ($credit > 0) {
+                            $transactions[] = [
+                                'date' => $date,
+                                'description' => $desc,
+                                'amount' => $credit,
+                                'type' => 'DEBIT',
+                                'balance' => $balance,
+                                'branch' => '0000',
+                            ];
+                        } elseif ($debit > 0) {
+                            $transactions[] = [
+                                'date' => $date,
+                                'description' => $desc,
+                                'amount' => $debit,
+                                'type' => 'CREDIT',
+                                'balance' => $balance,
+                                'branch' => '0000',
+                            ];
+                        }
+                        continue;
+                    }
+
+                    if (preg_match('/^(.+?)\s+([\d,.]+)\s*$/', $rest, $am)) {
+                        $desc = trim($am[1]);
+                        $amount = $this->cleanAmount($am[2]);
+                        if ($amount > 0) {
+                            $transactions[] = [
+                                'date' => $date,
+                                'description' => $desc,
+                                'amount' => $amount,
+                                'type' => $this->guessType($desc, $amount),
+                                'balance' => 0,
+                                'branch' => '0000',
+                            ];
+                        }
                     }
                 }
             }

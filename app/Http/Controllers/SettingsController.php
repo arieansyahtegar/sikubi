@@ -144,8 +144,12 @@ class SettingsController extends Controller
 
         if ($effectiveAccountId) {
             $query->where(function ($q) use ($effectiveAccountId) {
-                $q->where('bank_account_id', $effectiveAccountId)
-                  ->orWhereNull('bank_account_id');
+                if ($effectiveAccountId === 'cash') {
+                    $q->whereNull('bank_account_id');
+                } else {
+                    $q->where('bank_account_id', $effectiveAccountId)
+                      ->orWhereNull('bank_account_id');
+                }
             });
         }
 
@@ -153,8 +157,12 @@ class SettingsController extends Controller
         $catQuery = Category::orderBy('type')->orderBy('name');
         if ($effectiveAccountId) {
             $catQuery->where(function ($q) use ($effectiveAccountId) {
-                $q->where('bank_account_id', $effectiveAccountId)
-                  ->orWhereNull('bank_account_id');
+                if ($effectiveAccountId === 'cash') {
+                    $q->whereNull('bank_account_id');
+                } else {
+                    $q->where('bank_account_id', $effectiveAccountId)
+                      ->orWhereNull('bank_account_id');
+                }
             });
         }
 
@@ -176,6 +184,15 @@ class SettingsController extends Controller
             'priority' => 'nullable|integer|min:1',
             'bank_account_id' => 'nullable|exists:bank_accounts,id',
         ]);
+
+        if ($request->input('match_type') === 'REGEX') {
+            $pattern = $request->input('pattern');
+            if (@preg_match('/' . $pattern . '/', '') === false) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'pattern' => 'Format regular expression (Regex) tidak valid.'
+                ]);
+            }
+        }
 
         ClassificationRule::create($request->only(['category_id', 'pattern', 'match_type', 'priority', 'bank_account_id']));
         return back();

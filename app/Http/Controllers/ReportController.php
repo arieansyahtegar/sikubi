@@ -646,12 +646,12 @@ class ReportController extends Controller
         $fileName = 'rekap_excel_' . $year . '_' . sprintf('%02d', $month) . '_' . now()->format('Ymd_His') . '.xlsx';
         $writer = new Xlsx($spreadsheet);
 
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment; filename="' . $fileName . '"');
-        header('Cache-Control: max-age=0');
-
-        $writer->save('php://output');
-        exit;
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+        ]);
     }
 
     /**
@@ -709,7 +709,7 @@ class ReportController extends Controller
         }
 
         // 3. Remove date patterns and clean symbols
-        $cleaned = preg_replace('/\b\d{4}\b/', '', $cleaned);
+        $cleaned = preg_replace('/\b(?!19|20)\d{4}\b/', '', $cleaned);
         $cleaned = preg_replace('/[0-9]{2}\/[0-9]{2}/', '', $cleaned);
         $cleaned = preg_replace('/[\/\-\:\.\,]+/', ' ', $cleaned);
 

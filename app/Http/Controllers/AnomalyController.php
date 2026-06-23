@@ -48,6 +48,11 @@ class AnomalyController extends Controller
         // Clear unreviewed, non-dismissed flags before re-running
         AnomalyFlag::where('is_reviewed', false)
             ->where('is_dismissed', false)
+            ->when($accountId, function ($q) use ($accountId) {
+                $q->whereHas('transaction', function ($sq) use ($accountId) {
+                    $sq->forAccount($accountId);
+                });
+            })
             ->delete();
 
         $results = $detector->runFullDetection($accountId);
@@ -78,11 +83,9 @@ class AnomalyController extends Controller
         $incomeCount = collect($results)->where('type', 'INCOME')->count();
         $expenseCount = collect($results)->where('type', 'EXPENSE')->count();
 
-        return back()->with('flash', [
-            'detectResult' => [
-                'message' => "Deteksi selesai. {$flagsCreated} anomali ditemukan ({$incomeCount} pemasukan, {$expenseCount} pengeluaran).",
-                'flags_created' => $flagsCreated,
-            ],
+        return back()->with('detectResult', [
+            'message' => "Deteksi selesai. {$flagsCreated} anomali ditemukan ({$incomeCount} pemasukan, {$expenseCount} pengeluaran).",
+            'flags_created' => $flagsCreated,
         ]);
     }
 
@@ -92,6 +95,12 @@ class AnomalyController extends Controller
     public function review(Request $request, $id)
     {
         $flag = AnomalyFlag::findOrFail($id);
+
+        $request->validate([
+            'review_note' => 'nullable|string|max:1000',
+            'needs_leader_action' => 'boolean',
+            'dismiss' => 'boolean',
+        ]);
 
         $needsLeader = $request->boolean('needs_leader_action', false);
         if (!$needsLeader && $request->has('review_note')) {
@@ -128,19 +137,26 @@ class AnomalyController extends Controller
         })->orderByDesc('created_at');
 
         // Stats calculation
-        $totalAnomalies = (clone $query)->get();
-        $unreviewedCount = $totalAnomalies->filter(fn($a) => !$a->is_reviewed)->count();
+        $unreviewedCount = (clone $query)->where('is_reviewed', false)->count();
         
-        $needsLeaderActionCount = $totalAnomalies->filter(function($a) {
-            if (!$a->is_reviewed || $a->is_dismissed) return false;
-            if ($a->leader_reviewed_at !== null) return false; // Already resolved by leader!
-            return $a->needs_leader_action;
-        })->count();
+        $needsLeaderActionCount = (clone $query)->where('is_reviewed', true)
+            ->where('is_dismissed', false)
+            ->where('needs_leader_action', true)
+            ->whereNull('leader_reviewed_at')
+            ->count();
 
-        $reviewedCount = $totalAnomalies->filter(function($a) {
-            if (!$a->is_reviewed || $a->is_dismissed) return false;
-            return !$a->needs_leader_action || ($a->needs_leader_action && $a->leader_reviewed_at !== null);
-        })->count();
+        $reviewedCount = (clone $query)->where('is_reviewed', true)
+            ->where('is_dismissed', false)
+            ->where(function ($q) {
+                $q->where('needs_leader_action', false)
+                  ->orWhere(function ($sq) {
+                      $sq->where('needs_leader_action', true)
+                        ->whereNotNull('leader_reviewed_at');
+                  });
+            })
+            ->count();
+
+        $totalCount = (clone $query)->count();
 
         // Paginate anomalies
         $anomalies = $query->paginate(20)->withQueryString();
@@ -158,7 +174,7 @@ class AnomalyController extends Controller
                 'unreviewedCount' => $unreviewedCount,
                 'needsLeaderActionCount' => $needsLeaderActionCount,
                 'reviewedCount' => $reviewedCount,
-                'totalCount' => $totalAnomalies->count(),
+                'totalCount' => $totalCount,
             ],
         ]);
     }
@@ -169,6 +185,11 @@ class AnomalyController extends Controller
     public function leaderAction(Request $request, $id)
     {
         $flag = AnomalyFlag::findOrFail($id);
+
+        $request->validate([
+            'leader_note' => 'nullable|string|max:1000',
+            'approve' => 'boolean',
+        ]);
 
         $flag->update([
             'is_approved_by_leader' => $request->boolean('approve', true),

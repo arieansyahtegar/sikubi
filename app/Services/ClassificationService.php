@@ -17,83 +17,7 @@ class ClassificationService
     {
         $upperDesc = strtoupper(trim($description));
 
-        // Direct robust keyword classification for instant parity
-        $categories = \App\Models\Category::all();
-        $categoryMap = [];
-        foreach ($categories as $cat) {
-            $categoryMap[strtoupper($cat->name)] = $cat->id;
-        }
-
-        $findCategoryId = function($name) use ($categoryMap) {
-            $nameUpper = strtoupper($name);
-            if (isset($categoryMap[$nameUpper])) {
-                return $categoryMap[$nameUpper];
-            }
-            // Try fuzzy contains match
-            foreach ($categoryMap as $catName => $id) {
-                if (str_contains($catName, $nameUpper) || str_contains($nameUpper, $catName)) {
-                    return $id;
-                }
-            }
-            return null;
-        };
-
-        $matchedCategoryName = null;
-
-        if ($type === 'DEBIT') {
-            if (str_contains($upperDesc, 'ORDER') || str_contains($upperDesc, 'SALES') || str_contains($upperDesc, 'PENJUALAN') || str_contains($upperDesc, 'BCA-ORDER') || str_contains($upperDesc, 'BCA PT-ORDER')) {
-                $matchedCategoryName = 'Penjualan Langsung';
-            } elseif (str_contains($upperDesc, 'SETOR TUNAI') || str_contains($upperDesc, 'SETORAN TUNAI') || str_contains($upperDesc, 'TUNAI')) {
-                $matchedCategoryName = 'Penjualan Langsung';
-            } elseif (str_contains($upperDesc, 'SHOPEE') || str_contains($upperDesc, 'TOKOPEDIA') || str_contains($upperDesc, 'LAZADA') || str_contains($upperDesc, 'TIKTOK')) {
-                $matchedCategoryName = 'Online Shop';
-            } elseif (str_contains($upperDesc, 'PIUTANG') || str_contains($upperDesc, 'PELUNASAN')) {
-                $matchedCategoryName = 'Penagihan Piutang';
-            } elseif (str_contains($upperDesc, 'BUNGA') || str_contains($upperDesc, 'INTEREST')) {
-                $matchedCategoryName = 'Bunga Bank';
-            } elseif (str_contains($upperDesc, 'TF') || str_contains($upperDesc, 'TRANSFER') || str_contains($upperDesc, 'TRSF') || str_contains($upperDesc, 'MASUK') || str_contains($upperDesc, 'BI-FAST') || str_contains($upperDesc, 'BI FAST') || str_contains($upperDesc, 'FAST') || str_contains($upperDesc, 'SWITCHING') || str_contains($upperDesc, 'KLIRING') || str_contains($upperDesc, 'CR') || str_contains($upperDesc, 'MUTASI')) {
-                $matchedCategoryName = 'Transfer Masuk';
-            } elseif (str_contains($upperDesc, 'REIMBURSE') || str_contains($upperDesc, 'REFUND')) {
-                $matchedCategoryName = 'Pendapatan Lainnya';
-            } else {
-                $matchedCategoryName = 'Transfer Masuk';
-            }
-        } else { // CREDIT
-            if (str_contains($upperDesc, 'GAJI') || str_contains($upperDesc, 'PAYROLL') || str_contains($upperDesc, 'THR') || str_contains($upperDesc, 'LEMBUG') || str_contains($upperDesc, 'LEMBUR') || str_contains($upperDesc, 'SALARY')) {
-                $matchedCategoryName = 'Gaji & THR';
-            } elseif (str_contains($upperDesc, 'BIAYA ADM') || str_contains($upperDesc, 'ADMIN FEE') || str_contains($upperDesc, 'BIAYA TXN') || str_contains($upperDesc, 'BIAYA TRSF') || str_contains($upperDesc, 'BIAYA TRANSFER') || str_contains($upperDesc, 'ADM')) {
-                $matchedCategoryName = 'Admin Bank';
-            } elseif (str_contains($upperDesc, 'TARIK TUNAI') || str_contains($upperDesc, 'WITHDRAWAL') || str_contains($upperDesc, 'TARIKAN ATM') || str_contains($upperDesc, 'WD ATM')) {
-                $matchedCategoryName = 'Withdrawal (WD)';
-            } elseif (str_contains($upperDesc, 'PAJAK') || str_contains($upperDesc, 'PPN') || str_contains($upperDesc, 'PPH')) {
-                $matchedCategoryName = 'Pajak';
-            } elseif (str_contains($upperDesc, 'JNE') || str_contains($upperDesc, 'J&T') || str_contains($upperDesc, 'SICEPAT') || str_contains($upperDesc, 'ONGKIR') || str_contains($upperDesc, 'LOGISTIK')) {
-                $matchedCategoryName = 'Logistik';
-            } elseif (str_contains($upperDesc, 'PEMBELIAN') || str_contains($upperDesc, 'SUPPLIER') || str_contains($upperDesc, 'PO-') || str_contains($upperDesc, 'SOAP') || str_contains($upperDesc, 'QURBAN')) {
-                $matchedCategoryName = 'Pembelian Produk';
-            } elseif (str_contains($upperDesc, 'PLN') || str_contains($upperDesc, 'LISTRIK') || str_contains($upperDesc, 'PDAM') || str_contains($upperDesc, 'WATER') || str_contains($upperDesc, 'TELKOM') || str_contains($upperDesc, 'INTERNET') || str_contains($upperDesc, 'TOKEN')) {
-                $matchedCategoryName = 'Biaya Operasional';
-            } elseif (str_contains($upperDesc, 'SHOPEE') || str_contains($upperDesc, 'TOKOPEDIA') || str_contains($upperDesc, 'LAZADA') || str_contains($upperDesc, 'TIKTOK')) {
-                $matchedCategoryName = 'Online Shop';
-            } elseif (str_contains($upperDesc, 'BONUS') || str_contains($upperDesc, 'REWARD') || str_contains($upperDesc, 'CASHBACK')) {
-                $matchedCategoryName = 'Reward';
-            } else {
-                $matchedCategoryName = 'Transfer Keluar';
-            }
-        }
-
-        if ($matchedCategoryName) {
-            $catId = $findCategoryId($matchedCategoryName);
-            if ($catId) {
-                return [
-                    'category_id' => $catId,
-                    'method' => 'RULE_BASED',
-                    'confidence' => 1.0,
-                ];
-            }
-        }
-
-        // Stage 1: Rule-based matching (strict type match first)
+        // Stage 1: Rule-based matching (exact/contains/regex from DB)
         $rulesQuery = ClassificationRule::with('category')->orderBy('priority', 'asc');
         
         if ($accountId) {
@@ -132,6 +56,92 @@ class ClassificationService
                 return [
                     'category_id' => $rule->category_id,
                     'method' => 'RULE_BASED',
+                    'confidence' => 0.85,
+                ];
+            }
+        }
+
+        // Stage 1.5: Direct robust keyword classification fallback (account-aware)
+        $categoriesQuery = \App\Models\Category::query();
+        if ($accountId) {
+            $categoriesQuery->where(function ($q) use ($accountId) {
+                $q->where('bank_account_id', $accountId)
+                  ->orWhereNull('bank_account_id');
+            });
+        } else {
+            $categoriesQuery->whereNull('bank_account_id');
+        }
+        $categories = $categoriesQuery->get();
+
+        $categoryMap = [];
+        foreach ($categories as $cat) {
+            $categoryMap[strtoupper($cat->name)] = $cat->id;
+        }
+
+        $findCategoryId = function($name) use ($categoryMap) {
+            $nameUpper = strtoupper($name);
+            if (isset($categoryMap[$nameUpper])) {
+                return $categoryMap[$nameUpper];
+            }
+            // Try fuzzy contains match
+            foreach ($categoryMap as $catName => $id) {
+                if (str_contains($catName, $nameUpper) || str_contains($nameUpper, $catName)) {
+                    return $id;
+                }
+            }
+            return null;
+        };
+
+        $matchedCategoryName = null;
+
+        if ($type === 'DEBIT') {
+            if (str_contains($upperDesc, 'ORDER') || str_contains($upperDesc, 'SALES') || str_contains($upperDesc, 'PENJUALAN') || str_contains($upperDesc, 'BCA-ORDER') || str_contains($upperDesc, 'BCA PT-ORDER')) {
+                $matchedCategoryName = 'Penjualan Langsung';
+            } elseif (str_contains($upperDesc, 'SETOR TUNAI') || str_contains($upperDesc, 'SETORAN TUNAI') || str_contains($upperDesc, 'TUNAI')) {
+                $matchedCategoryName = 'Penjualan Langsung';
+            } elseif (str_contains($upperDesc, 'SHOPEE') || str_contains($upperDesc, 'TOKOPEDIA') || str_contains($upperDesc, 'LAZADA') || str_contains($upperDesc, 'TIKTOK')) {
+                $matchedCategoryName = 'Online Shop';
+            } elseif (str_contains($upperDesc, 'PIUTANG') || str_contains($upperDesc, 'PELUNASAN')) {
+                $matchedCategoryName = 'Penagihan Piutang';
+            } elseif (str_contains($upperDesc, 'BUNGA') || str_contains($upperDesc, 'INTEREST')) {
+                $matchedCategoryName = 'Bunga Bank';
+            } elseif (str_contains($upperDesc, 'TF') || str_contains($upperDesc, 'TRANSFER') || str_contains($upperDesc, 'TRSF') || str_contains($upperDesc, 'MASUK') || str_contains($upperDesc, 'BI-FAST') || str_contains($upperDesc, 'BI FAST') || str_contains($upperDesc, 'FAST') || str_contains($upperDesc, 'SWITCHING') || str_contains($upperDesc, 'KLIRING') || preg_match('/\bCR\b/', $upperDesc) || str_contains($upperDesc, 'MUTASI')) {
+                $matchedCategoryName = 'Transfer Masuk';
+            } elseif (str_contains($upperDesc, 'REIMBURSE') || str_contains($upperDesc, 'REFUND')) {
+                $matchedCategoryName = 'Pendapatan Lainnya';
+            } else {
+                $matchedCategoryName = 'Transfer Masuk';
+            }
+        } else { // CREDIT
+            if (str_contains($upperDesc, 'GAJI') || str_contains($upperDesc, 'PAYROLL') || str_contains($upperDesc, 'THR') || str_contains($upperDesc, 'LEMBUG') || str_contains($upperDesc, 'LEMBUR') || str_contains($upperDesc, 'SALARY')) {
+                $matchedCategoryName = 'Gaji & THR';
+            } elseif (str_contains($upperDesc, 'BIAYA ADM') || str_contains($upperDesc, 'ADMIN FEE') || str_contains($upperDesc, 'BIAYA TXN') || str_contains($upperDesc, 'BIAYA TRSF') || str_contains($upperDesc, 'BIAYA TRANSFER') || str_contains($upperDesc, 'ADM')) {
+                $matchedCategoryName = 'Admin Bank';
+            } elseif (str_contains($upperDesc, 'TARIK TUNAI') || str_contains($upperDesc, 'WITHDRAWAL') || str_contains($upperDesc, 'TARIKAN ATM') || str_contains($upperDesc, 'WD ATM')) {
+                $matchedCategoryName = 'Withdrawal (WD)';
+            } elseif (str_contains($upperDesc, 'PAJAK') || str_contains($upperDesc, 'PPN') || str_contains($upperDesc, 'PPH')) {
+                $matchedCategoryName = 'Pajak';
+            } elseif (str_contains($upperDesc, 'JNE') || str_contains($upperDesc, 'J&T') || str_contains($upperDesc, 'SICEPAT') || str_contains($upperDesc, 'ONGKIR') || str_contains($upperDesc, 'LOGISTIK')) {
+                $matchedCategoryName = 'Logistik';
+            } elseif (str_contains($upperDesc, 'PEMBELIAN') || str_contains($upperDesc, 'SUPPLIER') || str_contains($upperDesc, 'PO-') || str_contains($upperDesc, 'SOAP') || str_contains($upperDesc, 'QURBAN')) {
+                $matchedCategoryName = 'Pembelian Produk';
+            } elseif (str_contains($upperDesc, 'PLN') || str_contains($upperDesc, 'LISTRIK') || str_contains($upperDesc, 'PDAM') || str_contains($upperDesc, 'WATER') || str_contains($upperDesc, 'TELKOM') || str_contains($upperDesc, 'INTERNET') || str_contains($upperDesc, 'TOKEN')) {
+                $matchedCategoryName = 'Biaya Operasional';
+            } elseif (str_contains($upperDesc, 'SHOPEE') || str_contains($upperDesc, 'TOKOPEDIA') || str_contains($upperDesc, 'LAZADA') || str_contains($upperDesc, 'TIKTOK')) {
+                $matchedCategoryName = 'Online Shop';
+            } elseif (str_contains($upperDesc, 'BONUS') || str_contains($upperDesc, 'REWARD') || str_contains($upperDesc, 'CASHBACK')) {
+                $matchedCategoryName = 'Reward';
+            } else {
+                $matchedCategoryName = 'Transfer Keluar';
+            }
+        }
+
+        if ($matchedCategoryName) {
+            $catId = $findCategoryId($matchedCategoryName);
+            if ($catId) {
+                return [
+                    'category_id' => $catId,
+                    'method' => 'KEYWORD_MATCH',
                     'confidence' => 0.85,
                 ];
             }
@@ -303,7 +313,7 @@ class ClassificationService
         return match ($rule->match_type) {
             'EXACT' => ($upperDesc === $pattern),
             'CONTAINS' => str_contains($upperDesc, $pattern),
-            'REGEX' => (bool) @preg_match('/' . $pattern . '/i', $upperDesc),
+            'REGEX' => (@preg_match('/' . $pattern . '/i', $upperDesc) === 1),
             default => false,
         };
     }

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import DateRangePicker from '@/Components/DateRangePicker.vue';
@@ -139,23 +139,23 @@ function getCategoriesByType(type) {
             <div class="glass-card p-4 sm:p-5">
                 <!-- Filters -->
                 <div class="space-y-2.5 mb-5">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <input v-model="search" @keyup.enter="applyFilters" type="text" placeholder="Cari deskripsi..." class="filter-field flex-1 min-w-[140px]" />
-                        <select v-model="type" @change="applyFilters" class="filter-field !w-auto min-w-[120px]">
+                    <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+                        <input v-model="search" @keyup.enter="applyFilters" type="text" placeholder="Cari deskripsi..." class="filter-field col-span-2 sm:flex-1 w-full" />
+                        <select v-model="type" @change="applyFilters" class="filter-field col-span-1 w-full sm:!w-auto sm:min-w-[120px]">
                             <option value="">Semua Tipe</option>
                             <option value="DEBIT">Pemasukan</option>
                             <option value="CREDIT">Pengeluaran</option>
                         </select>
-                        <select v-if="categories?.length" v-model="categoryId" @change="applyFilters" class="filter-field !w-auto min-w-[130px]">
+                        <select v-if="categories?.length" v-model="categoryId" @change="applyFilters" class="filter-field col-span-1 w-full sm:!w-auto sm:min-w-[130px]">
                             <option value="">Semua Kategori</option>
                             <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
                         </select>
-                        <select v-if="accounts?.length" v-model="accountId" @change="applyFilters" class="filter-field !w-auto min-w-[130px]">
+                        <select v-if="accounts?.length" v-model="accountId" @change="applyFilters" class="filter-field col-span-2 sm:col-span-1 w-full sm:!w-auto sm:min-w-[130px]">
                             <option value="">Semua Rekening</option>
                             <option value="cash">Transaksi Tunai</option>
                             <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
                         </select>
-                        <button @click="applyFilters" class="btn-primary text-xs !py-1.5 !px-4">Cari</button>
+                        <button @click="applyFilters" class="btn-primary text-xs !py-1.5 !px-4 col-span-2 sm:col-span-auto w-full sm:w-auto justify-center">Cari</button>
                     </div>
                     <DateRangePicker :initial-from="filters?.date_from" :initial-to="filters?.date_to" @update="onDateUpdate" />
                 </div>

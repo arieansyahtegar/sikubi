@@ -213,6 +213,8 @@ const showForceDeleteModal = ref(false);
 const forceDeleteTarget = ref(null);
 const showMultipleForceDeleteModal = ref(false);
 const selectedTrashed = ref([]);
+const showDeleteAllModal = ref(false);
+const deletingAll = ref(false);
 
 const selectAllTrashed = computed({
     get: () => props.trashedBatches?.length > 0 && selectedTrashed.value.length === props.trashedBatches.length,
@@ -312,6 +314,30 @@ function executeMultipleForceDelete() {
             if (props.trashedBatches?.length === 0) {
                 showTrashed.value = false;
             }
+        },
+    });
+}
+
+function confirmDeleteAll() {
+    showDeleteAllModal.value = true;
+}
+
+function executeDeleteAll() {
+    deletingAll.value = true;
+    router.delete('/import/all', {
+        preserveScroll: true,
+        onSuccess: (p) => {
+            const result = p.props.flash?.importResult;
+            if (result) {
+                uploadResult.value = result;
+                addToast?.(result.message || 'Semua riwayat import berhasil dihapus permanen', 'success');
+            }
+            showTrashed.value = false;
+        },
+        onError: () => addToast?.('Gagal menghapus semua riwayat import', 'error'),
+        onFinish: () => {
+            deletingAll.value = false;
+            showDeleteAllModal.value = false;
         },
     });
 }
@@ -554,27 +580,27 @@ function formatCurrency(v) {
                     <p class="text-sm text-surface-600 mb-4">Transaksi ini terdeteksi sama persis dengan yang sudah ada di sistem. Anda dapat memaksanya masuk atau mengabaikannya.</p>
                     
                     <div class="table-container max-h-[400px] overflow-y-auto mb-2">
-                        <table class="data-table w-full text-left">
-                            <thead class="sticky top-0 bg-white shadow-sm z-10">
+                        <table class="data-table w-full text-left border-collapse">
+                            <thead>
                                 <tr>
-                                    <th class="w-10 text-center px-4 py-3"><input type="checkbox" v-model="selectAllDuplicates" class="rounded border-surface-300 text-plum focus:ring-plum/20 transition-all cursor-pointer" /></th>
-                                    <th class="px-4 py-3 whitespace-nowrap">Tanggal</th>
-                                    <th class="px-4 py-3">Deskripsi</th>
-                                    <th class="px-4 py-3 whitespace-nowrap">Nominal</th>
-                                    <th class="px-4 py-3 whitespace-nowrap">Rekening</th>
+                                    <th class="w-12 text-center px-2 py-3 sticky top-0 bg-white z-10 border-b border-rose-100"><input type="checkbox" v-model="selectAllDuplicates" class="rounded border-surface-300 text-plum focus:ring-plum/20 transition-all cursor-pointer" /></th>
+                                    <th class="px-4 py-3 whitespace-nowrap sticky top-0 bg-white z-10 border-b border-rose-100">Tanggal</th>
+                                    <th class="px-4 py-3 sticky top-0 bg-white z-10 border-b border-rose-100">Deskripsi</th>
+                                    <th class="px-4 py-3 text-right whitespace-nowrap sticky top-0 bg-white z-10 border-b border-rose-100">Nominal</th>
+                                    <th class="px-4 py-3 text-right whitespace-nowrap sticky top-0 bg-white z-10 border-b border-rose-100">Rekening</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="dup in pendingDuplicates" :key="dup.id" :class="{'bg-rose-50/30': selectedDuplicates.includes(dup.id)}">
-                                    <td class="w-10 text-center px-4 py-3"><input type="checkbox" :value="dup.id" v-model="selectedDuplicates" class="rounded border-surface-300 text-plum focus:ring-plum/20 transition-all cursor-pointer" /></td>
+                                    <td class="w-12 text-center px-2 py-3"><input type="checkbox" :value="dup.id" v-model="selectedDuplicates" class="rounded border-surface-300 text-plum focus:ring-plum/20 transition-all cursor-pointer" /></td>
                                     <td class="px-4 py-3 whitespace-nowrap">{{ formatDate(dup.transaction_date) }}</td>
                                     <td class="px-4 py-3 font-medium text-plum">{{ dup.description }}</td>
-                                    <td class="px-4 py-3 whitespace-nowrap">
+                                    <td class="px-4 py-3 text-right whitespace-nowrap">
                                         <span :class="dup.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500'">
                                             {{ dup.type === 'DEBIT' ? '+' : '-' }}{{ formatCurrency(dup.amount) }}
                                         </span>
                                     </td>
-                                    <td class="px-4 py-3 text-xs whitespace-nowrap">{{ dup.bank_account?.account_alias || dup.bank_account?.bank_name }}</td>
+                                    <td class="px-4 py-3 text-right text-xs whitespace-nowrap">{{ dup.bank_account?.account_alias || dup.bank_account?.bank_name }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -584,7 +610,18 @@ function formatCurrency(v) {
 
             <!-- Import History -->
             <div v-if="batches && batches.length > 0" class="glass-card p-4 sm:p-6">
-                <h3 class="section-title text-sm sm:text-base mb-3 sm:mb-4">Riwayat Import</h3>
+                <div class="flex items-center justify-between mb-3 sm:mb-4">
+                    <h3 class="section-title text-sm sm:text-base mb-0">Riwayat Import</h3>
+                    <button
+                        @click="confirmDeleteAll"
+                        class="text-[10px] sm:text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-red-200 transition-colors flex items-center gap-1.5"
+                    >
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Hapus Semua Riwayat
+                    </button>
+                </div>
 
                 <!-- Desktop -->
                 <div class="hidden sm:block table-container">
@@ -726,6 +763,18 @@ function formatCurrency(v) {
             variant="danger"
             @confirm="executeMultipleForceDelete"
             @cancel="showMultipleForceDeleteModal = false"
+        />
+
+        <!-- Delete All Confirmation Modal -->
+        <ConfirmModal
+            :show="showDeleteAllModal"
+            title="Hapus Semua Riwayat Import?"
+            message="Anda akan menghapus secara PERMANEN seluruh riwayat import beserta seluruh data transaksinya dari database. Tindakan ini TIDAK dapat dibatalkan."
+            confirmText="Ya, Hapus Semua Permanen"
+            variant="danger"
+            :processing="deletingAll"
+            @confirm="executeDeleteAll"
+            @cancel="showDeleteAllModal = false"
         />
     </AppLayout>
 </template>

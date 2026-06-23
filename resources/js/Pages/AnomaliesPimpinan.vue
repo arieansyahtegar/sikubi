@@ -125,8 +125,8 @@ function submitLeaderAction(flagId) {
                     <h1 class="page-title text-lg sm:text-2xl">Otorisasi & Pengawasan Mutasi</h1>
                     <p class="text-xs sm:text-sm text-surface-600 mt-0.5">Tinjau transaksi tidak wajar, kepatuhan nominal, dan otorisasi mutasi luar biasa</p>
                 </div>
-                <div class="flex items-center gap-2">
-                    <select v-model="selectedAccountId" @change="onAccountChange" class="filter-field !w-auto !pr-8 max-w-full sm:max-w-[200px] flex-shrink-0">
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <select v-model="selectedAccountId" @change="onAccountChange" class="filter-field w-full sm:!w-auto !pr-8 sm:max-w-[200px] flex-shrink-0">
                         <option value="">Semua Rekening</option>
                         <option value="cash">Transaksi Tunai</option>
                         <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>

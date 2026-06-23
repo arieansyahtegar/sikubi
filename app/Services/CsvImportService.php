@@ -79,9 +79,16 @@ class CsvImportService
         $year = date('Y');
         $periode = '';
         foreach ($lines as $line) {
-            if (preg_match('/Periode\s*:\s*(\d{2}\/\d{2}\/(\d{4}))\s*-\s*(\d{2}\/\d{2}\/\d{4})/', trim($line), $m)) {
-                $year = $m[2];
-                $periode = $m[1] . ' - ' . $m[3];
+            if (stripos($line, 'Periode') !== false) {
+                if (preg_match('/\b((?:19|20)\d{2})\b/', $line, $m)) {
+                    $year = $m[1];
+                }
+                if (preg_match('/Periode\s*:\s*([^:\r\n]+)/i', $line, $m)) {
+                    $periode = trim($m[1]);
+                } else {
+                    $periode = trim(str_ireplace('Periode', '', $line));
+                    $periode = trim($periode, " \t\n\r\0\x0B:");
+                }
                 break;
             }
         }
@@ -301,6 +308,12 @@ class CsvImportService
     private function processRows(int $accountId, string $fileName, ?int $userId, string $bankFormat, string $periode, array $dataLines, callable $parser): array
     {
         $totalRows = count($dataLines);
+        if ($totalRows === 0) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'csv_files' => "File {$fileName} tidak memiliki transaksi yang valid untuk diimpor."
+            ]);
+        }
+
         $batch = ImportBatch::create([
             'bank_account_id' => $accountId,
             'uploaded_by' => $userId,
@@ -334,6 +347,7 @@ class CsvImportService
                     . '-' . $parsed['description']
                     . '-' . $parsed['amount']
                     . '-' . $parsed['type']
+                    . '-' . ($parsed['saldo'] ?? '')
                     . '-' . $accountId;
                 $hash = hash('sha256', $hashInput);
 
@@ -383,6 +397,13 @@ class CsvImportService
                     'reason' => $e->getMessage(),
                 ];
             }
+        }
+
+        if ($successCount === 0 && $duplicateCount === 0) {
+            $batch->forceDelete();
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'csv_files' => "File {$fileName} tidak memiliki transaksi valid untuk diimpor."
+            ]);
         }
 
         $batch->update([
@@ -462,8 +483,28 @@ class CsvImportService
             $type = ($indicator === 'CR') ? 'DEBIT' : 'CREDIT';
             $amountStr = trim(substr($jumlahRaw, 0, -strlen($typeMatch[0])));
         } else {
-            if (stripos($description, ' CR ') !== false || str_starts_with(strtoupper($description), 'TRSF E-BANKING CR')) {
+            $upperDesc = strtoupper($description);
+            if (
+                stripos($description, ' CR ') !== false ||
+                str_starts_with($upperDesc, 'TRSF E-BANKING CR') ||
+                str_contains($upperDesc, 'BI-FAST CR') ||
+                str_contains($upperDesc, 'SWITCHING CR') ||
+                str_contains($upperDesc, 'BUNGA') ||
+                str_contains($upperDesc, 'SETOR KEPADA') ||
+                str_contains($upperDesc, 'SETOR TUNAI')
+            ) {
                 $type = 'DEBIT';
+            } elseif (
+                stripos($description, ' DB ') !== false ||
+                str_starts_with($upperDesc, 'TRSF E-BANKING DB') ||
+                str_contains($upperDesc, 'BI-FAST DB') ||
+                str_contains($upperDesc, 'SWITCHING DB') ||
+                str_contains($upperDesc, 'BIAYA ADM') ||
+                str_contains($upperDesc, 'TARIKAN ATM') ||
+                str_contains($upperDesc, 'PAJAK') ||
+                str_contains($upperDesc, 'BIAYA TXN')
+            ) {
+                $type = 'CREDIT';
             } else {
                 $type = 'CREDIT';
             }

@@ -20,9 +20,6 @@ return new class extends Migration
         if (DB::getDriverName() === 'sqlite') {
             DB::statement('PRAGMA foreign_keys=off');
 
-            // Rename current table
-            DB::statement('ALTER TABLE transactions RENAME TO transactions_old');
-
             // Drop old indexes to avoid naming conflicts on SQLite
             DB::statement('DROP INDEX IF EXISTS transactions_bank_account_id_transaction_date_index');
             DB::statement('DROP INDEX IF EXISTS transactions_type_category_id_index');
@@ -30,8 +27,8 @@ return new class extends Migration
             DB::statement('DROP INDEX IF EXISTS transactions_source_index');
             DB::statement('DROP INDEX IF EXISTS transactions_deduplication_hash_unique');
 
-            // Create new table with bank_account_id nullable
-            Schema::create('transactions', function (Blueprint $table) {
+            // Create temporary table with bank_account_id nullable
+            Schema::create('transactions_temp', function (Blueprint $table) {
                 $table->id();
                 $table->unsignedBigInteger('import_batch_id')->nullable();
                 $table->unsignedBigInteger('bank_account_id')->nullable();
@@ -43,7 +40,7 @@ return new class extends Migration
                 $table->string('classification_method', 30)->default('UNCLASSIFIED');
                 $table->decimal('confidence_score', 3, 2)->default(0);
                 $table->json('raw_data')->nullable();
-                $table->string('deduplication_hash', 64)->unique();
+                $table->string('deduplication_hash', 64);
                 $table->string('source', 20)->default('IMPORT');
                 $table->timestamps();
                 $table->softDeletes();
@@ -52,16 +49,21 @@ return new class extends Migration
                 $table->foreign('bank_account_id')->references('id')->on('bank_accounts')->onDelete('set null');
                 $table->foreign('category_id')->references('id')->on('categories')->onDelete('set null');
 
-                $table->index(['bank_account_id', 'transaction_date']);
-                $table->index(['type', 'category_id']);
-                $table->index('transaction_date');
-                $table->index('source');
+                $table->unique('deduplication_hash', 'transactions_deduplication_hash_unique');
+                $table->index(['bank_account_id', 'transaction_date'], 'transactions_bank_account_id_transaction_date_index');
+                $table->index(['type', 'category_id'], 'transactions_type_category_id_index');
+                $table->index('transaction_date', 'transactions_transaction_date_index');
+                $table->index('source', 'transactions_source_index');
             });
 
-            // Copy all existing data
-            DB::statement('INSERT INTO transactions (id, import_batch_id, bank_account_id, transaction_date, description, amount, type, category_id, classification_method, confidence_score, raw_data, deduplication_hash, source, created_at, updated_at, deleted_at) SELECT id, import_batch_id, bank_account_id, transaction_date, description, amount, type, category_id, classification_method, confidence_score, raw_data, deduplication_hash, source, created_at, updated_at, deleted_at FROM transactions_old');
+            // Copy all existing data from original transactions table
+            DB::statement('INSERT INTO transactions_temp (id, import_batch_id, bank_account_id, transaction_date, description, amount, type, category_id, classification_method, confidence_score, raw_data, deduplication_hash, source, created_at, updated_at, deleted_at) SELECT id, import_batch_id, bank_account_id, transaction_date, description, amount, type, category_id, classification_method, confidence_score, raw_data, deduplication_hash, source, created_at, updated_at, deleted_at FROM transactions');
 
-            DB::statement('DROP TABLE transactions_old');
+            // Drop original table (foreign key references on other tables like anomaly_flags still point to 'transactions')
+            DB::statement('DROP TABLE transactions');
+
+            // Rename transactions_temp to transactions (restoring table name and repairing foreign keys)
+            DB::statement('ALTER TABLE transactions_temp RENAME TO transactions');
 
             DB::statement('PRAGMA foreign_keys=on');
         } else {
