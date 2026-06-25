@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
                 'name' => $u['name'],
                 'email' => $u['email'],
                 'password' => Hash::make($u['password']),
+                'password_hint' => User::generatePasswordHint($u['password']),
                 'role' => $u['role'],
             ]);
             $this->command->info("  ✓ User: {$u['email']} ({$u['role']}) — password: {$u['password']}");

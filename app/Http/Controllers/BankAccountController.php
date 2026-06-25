@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\BankAccount;
-use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -11,37 +10,28 @@ class BankAccountController extends Controller
 {
     public function index(Request $request)
     {
-        $accounts = BankAccount::withCount('transactions')->get();
-        
-        $selectedAccountId = $request->input('account_id');
-        if (!$selectedAccountId && $accounts->isNotEmpty()) {
-            $selectedAccountId = (string) $accounts->first()->id;
-        }
-        
-        $transactions = null;
-        
-        if ($selectedAccountId) {
-            $query = Transaction::where('bank_account_id', $selectedAccountId)
-                ->with('category:id,name,color')
-                ->orderByDesc('transaction_date');
-                
-            if ($dateFrom = $request->input('date_from')) {
-                $query->where('transaction_date', '>=', $dateFrom);
-            }
-            if ($dateTo = $request->input('date_to')) {
-                $query->where('transaction_date', '<=', $dateTo);
-            }
-            
-            $transactions = $query->paginate(20)->withQueryString();
+        $dateFrom = $request->input('date_from');
+        $dateTo   = $request->input('date_to');
+
+        // If date filters are present, count only transactions within that range
+        if ($dateFrom || $dateTo) {
+            $accounts = BankAccount::withCount(['transactions' => function ($q) use ($dateFrom, $dateTo) {
+                if ($dateFrom) {
+                    $q->where('transaction_date', '>=', $dateFrom);
+                }
+                if ($dateTo) {
+                    $q->where('transaction_date', '<=', $dateTo);
+                }
+            }])->get();
+        } else {
+            $accounts = BankAccount::withCount('transactions')->get();
         }
 
         return Inertia::render('Accounts', [
-            'accounts' => $accounts,
-            'transactions' => $transactions,
-            'filters' => [
-                'account_id' => $selectedAccountId,
-                'date_from' => $request->input('date_from'),
-                'date_to' => $request->input('date_to'),
+            'accounts'  => $accounts,
+            'filters'   => [
+                'date_from' => $dateFrom,
+                'date_to'   => $dateTo,
             ],
         ]);
     }

@@ -6,7 +6,6 @@ import ConfirmModal from '@/Components/ConfirmModal.vue';
 
 const props = defineProps({
     accounts: Array,
-    transactions: Object,
     filters: Object
 });
 
@@ -17,18 +16,19 @@ const form = useForm({ bank_name: '', account_number: '', account_alias: '', cur
 const showDeleteModal = ref(false);
 const deleteTarget = ref(null);
 
-const selectedAccountId = ref(props.filters?.account_id ? Number(props.filters.account_id) : null);
 const dateFrom = ref(props.filters?.date_from || '');
 const dateTo = ref(props.filters?.date_to || '');
 
+// Generate timeline months (last 12 months from current date)
 const timelineMonths = computed(() => {
     const list = [];
     const monthsName = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-    const baseDate = new Date(2026, 5, 23); // June 23, 2026
+    const now = new Date();
     for (let i = 0; i < 12; i++) {
-        const d = new Date(baseDate.getFullYear(), baseDate.getMonth() - i, 1);
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
         list.push({
             label: `${monthsName[d.getMonth()]} ${d.getFullYear()}`,
+            shortLabel: `${monthsName[d.getMonth()].substring(0, 3)} ${d.getFullYear()}`,
             month: d.getMonth() + 1,
             year: d.getFullYear(),
             key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
@@ -54,9 +54,14 @@ const activeTimelineKey = computed(() => {
     return '';
 });
 
+// Total transaction count for the currently active filter
+const totalTransactions = computed(() => {
+    if (!props.accounts) return 0;
+    return props.accounts.reduce((sum, acc) => sum + (acc.transactions_count || 0), 0);
+});
+
 function applyFilters() {
     router.get('/accounts', {
-        account_id: selectedAccountId.value || undefined,
         date_from: dateFrom.value || undefined,
         date_to: dateTo.value || undefined,
     }, { preserveState: true, preserveScroll: true });
@@ -75,33 +80,10 @@ function selectTimeline(month) {
     applyFilters();
 }
 
-function selectAccount(acc) {
-    if (selectedAccountId.value === acc.id) {
-        selectedAccountId.value = null;
-        dateFrom.value = '';
-        dateTo.value = '';
-        router.get('/accounts', {}, { preserveState: true, preserveScroll: true });
-    } else {
-        selectedAccountId.value = acc.id;
-        dateFrom.value = '';
-        dateTo.value = '';
-        applyFilters();
-    }
-}
-
 watch(() => props.filters, (f) => {
-    selectedAccountId.value = f?.account_id ? Number(f.account_id) : null;
     dateFrom.value = f?.date_from || '';
     dateTo.value = f?.date_to || '';
 }, { deep: true });
-
-const selectedAccount = computed(() => {
-    if (!selectedAccountId.value) return null;
-    return props.accounts.find(a => Number(a.id) === Number(selectedAccountId.value));
-});
-
-function formatCurrency(v) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v); }
-function formatDate(d) { return new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }); }
 
 function submit() {
     form.post('/accounts', {
@@ -169,6 +151,8 @@ function submitEdit() {
                 </div>
                 <button @click="showForm = !showForm" class="btn-primary w-full sm:w-auto justify-center">+ Tambah</button>
             </div>
+
+            <!-- Add Account Form -->
             <Transition name="slide-up">
                 <div v-if="showForm" class="glass-card p-6">
                     <form @submit.prevent="submit" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -179,15 +163,56 @@ function submitEdit() {
                     </form>
                 </div>
             </Transition>
+
+            <!-- Timeline Month Filter -->
+            <div class="glass-card p-4 sm:p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-lg bg-gradient-rose flex items-center justify-center">
+                            <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                            </svg>
+                        </div>
+                        <p class="text-xs font-bold text-plum uppercase tracking-wider">Filter Periode</p>
+                    </div>
+                    <span v-if="activeTimelineKey" class="text-[11px] text-surface-500 font-medium">
+                        Total: <strong class="text-plum">{{ totalTransactions }}</strong> transaksi
+                    </span>
+                </div>
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-thin">
+                    <button
+                        @click="selectTimeline('')"
+                        :class="[
+                            'timeline-btn',
+                            !activeTimelineKey
+                                ? 'timeline-btn-active'
+                                : 'timeline-btn-inactive'
+                        ]"
+                    >
+                        <span>Semua</span>
+                        <span v-if="!activeTimelineKey" class="timeline-badge">{{ totalTransactions }}</span>
+                    </button>
+                    <button
+                        v-for="month in timelineMonths" :key="month.key"
+                        @click="selectTimeline(month)"
+                        :class="[
+                            'timeline-btn',
+                            activeTimelineKey === month.key
+                                ? 'timeline-btn-active'
+                                : 'timeline-btn-inactive'
+                        ]"
+                    >
+                        <span class="hidden sm:inline">{{ month.label }}</span>
+                        <span class="sm:hidden">{{ month.shortLabel }}</span>
+                        <span v-if="activeTimelineKey === month.key" class="timeline-badge">{{ totalTransactions }}</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bank Account Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div v-for="acc in accounts" :key="acc.id" 
-                    @click="selectAccount(acc)"
-                    :class="[
-                        'glass-card-hover p-5 cursor-pointer transition-all border-2',
-                        selectedAccountId === acc.id 
-                            ? 'border-plum bg-rose-50/10 shadow-md ring-2 ring-rose-100/50 scale-[1.02]' 
-                            : 'border-transparent'
-                    ]"
+                <div v-for="acc in accounts" :key="acc.id"
+                    class="glass-card-hover p-5 transition-all border-2 border-transparent hover:border-rose-100/60"
                 >
                     <div class="flex items-start justify-between">
                         <div class="w-10 h-10 rounded-xl bg-gradient-rose flex items-center justify-center text-white font-bold text-sm">
@@ -204,143 +229,30 @@ function submitEdit() {
                     </div>
                     <h3 class="text-lg font-semibold text-plum mt-3">{{ acc.account_alias || acc.bank_name }}</h3>
                     <p class="text-sm text-surface-500">{{ acc.bank_name }} · {{ acc.account_number }}</p>
-                    <p class="text-xs text-surface-500 mt-2">{{ acc.transactions_count || 0 }} transaksi</p>
+                    <div class="flex items-center gap-2 mt-3 pt-3 border-t border-rose-100/40">
+                        <div class="w-6 h-6 rounded-md bg-rose-50 flex items-center justify-center">
+                            <svg class="w-3.5 h-3.5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-plum leading-tight">{{ acc.transactions_count || 0 }}</p>
+                            <p class="text-[10px] text-surface-500 leading-tight">
+                                {{ activeTimelineKey ? 'transaksi bulan ini' : 'total transaksi' }}
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Transactions Section (shown only when an account is selected) -->
-            <Transition name="slide-up">
-                <div v-if="selectedAccount && transactions" class="glass-card p-5 space-y-6">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-rose-100/40 pb-4">
-                        <div>
-                            <h2 class="text-lg font-bold text-plum">
-                                Transaksi Rekening: {{ selectedAccount.account_alias || selectedAccount.bank_name }}
-                            </h2>
-                            <p class="text-xs text-surface-500 mt-0.5">
-                                {{ selectedAccount.bank_name }} · {{ selectedAccount.account_number }}
-                            </p>
-                        </div>
-                        <button @click="selectAccount(selectedAccount)" class="text-xs text-surface-500 hover:text-plum font-semibold flex items-center gap-1">
-                            ✕ Tutup Transaksi
-                        </button>
-                    </div>
-
-                    <!-- Timeline Filter inside Bank Account page -->
-                    <div class="pt-1">
-                        <p class="text-[10px] font-bold text-surface-500 uppercase tracking-wider mb-2">Timeline Cepat:</p>
-                        <div class="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-thin">
-                            <button
-                                @click="selectTimeline('')"
-                                :class="[
-                                    'px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all whitespace-nowrap border',
-                                    !activeTimelineKey
-                                        ? 'bg-gradient-rose text-white border-rose-400 shadow-soft'
-                                        : 'bg-white text-surface-600 border-surface-200 hover:border-rose-300 hover:text-rose-600'
-                                ]"
-                            >
-                                Semua Waktu <span v-if="!activeTimelineKey && transactions" class="ml-1 text-[10px] opacity-90">({{ transactions.total }})</span>
-                            </button>
-                            <button
-                                v-for="month in timelineMonths" :key="month.key"
-                                @click="selectTimeline(month)"
-                                :class="[
-                                    'px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-all whitespace-nowrap border',
-                                    activeTimelineKey === month.key
-                                        ? 'bg-gradient-rose text-white border-rose-400 shadow-soft'
-                                        : 'bg-white text-surface-600 border-surface-200 hover:border-rose-300 hover:text-rose-600'
-                                ]"
-                            >
-                                {{ month.label }} <span v-if="activeTimelineKey === month.key && transactions" class="ml-1 text-[10px] opacity-90">({{ transactions.total }})</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Summary -->
-                    <div v-if="transactions.total" class="text-xs text-surface-500">
-                        Menampilkan {{ transactions.from }}–{{ transactions.to }} dari {{ transactions.total }} transaksi
-                    </div>
-
-                    <!-- Empty State -->
-                    <div v-if="!transactions.data?.length" class="text-center py-12 text-surface-500">
-                        <svg class="w-12 h-12 text-surface-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
-                        </svg>
-                        <p class="font-medium text-surface-600">Tidak ada transaksi yang ditemukan.</p>
-                        <p class="text-xs mt-1">Coba pilih timeline bulan lain.</p>
-                    </div>
-
-                    <template v-else>
-                        <!-- Desktop Table -->
-                        <div class="hidden sm:block table-container">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th class="px-4 py-3 text-left">Tanggal</th>
-                                        <th class="px-4 py-3 text-left">Deskripsi</th>
-                                        <th class="px-4 py-3 text-left">Kategori</th>
-                                        <th class="px-4 py-3 text-right">Jumlah</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="tx in transactions.data" :key="tx.id">
-                                        <td class="px-4 py-3.5 whitespace-nowrap">{{ formatDate(tx.transaction_date) }}</td>
-                                        <td class="px-4 py-3.5 max-w-md truncate" :title="tx.description">{{ tx.description }}</td>
-                                        <td class="px-4 py-3.5">
-                                            <span v-if="tx.category" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold shadow-sm" :style="{ background: tx.category.color + '12', color: tx.category.color, border: '1px solid ' + tx.category.color + '30' }">
-                                                <span class="w-1.5 h-1.5 rounded-full" :style="{ background: tx.category.color }"></span>
-                                                {{ tx.category.name }}
-                                            </span>
-                                            <span v-else class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-200/60 shadow-sm italic">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                                                Belum Terkategori
-                                            </span>
-                                        </td>
-                                        <td :class="['px-4 py-3.5 text-right font-bold whitespace-nowrap', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
-                                            {{ tx.type === 'DEBIT' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Mobile Cards -->
-                        <div class="sm:hidden space-y-3">
-                            <div v-for="tx in transactions.data" :key="tx.id" class="mobile-card space-y-2.5">
-                                <div class="flex justify-between items-start">
-                                    <p class="text-sm font-semibold text-plum truncate flex-1" :title="tx.description">{{ tx.description }}</p>
-                                    <p :class="['text-sm font-bold ml-2', tx.type === 'DEBIT' ? 'text-emerald-600' : 'text-red-500']">
-                                        {{ tx.type === 'DEBIT' ? '+' : '-' }}{{ formatCurrency(tx.amount) }}
-                                    </p>
-                                </div>
-                                <div class="flex justify-between items-center text-xs text-surface-500">
-                                    <span>{{ formatDate(tx.transaction_date) }}</span>
-                                    <div>
-                                        <span v-if="tx.category" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold" :style="{ background: tx.category.color + '12', color: tx.category.color, border: '1px solid ' + tx.category.color + '30' }">
-                                            <span class="w-1.5 h-1.5 rounded-full" :style="{ background: tx.category.color }"></span>
-                                            {{ tx.category.name }}
-                                        </span>
-                                        <span v-else class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-600 border border-amber-200/60 italic">
-                                            <span class="w-1 h-1 rounded-full bg-amber-400"></span>
-                                            Belum Terkategori
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Pagination -->
-                        <div v-if="transactions.last_page > 1" class="flex justify-center gap-1.5 sm:gap-2 mt-6 flex-wrap">
-                            <template v-for="(link, idx) in transactions.links" :key="link.url || 'ellipsis-' + idx">
-                                <span v-if="link.url"
-                                    @click="router.get(link.url, {}, { preserveState: true, preserveScroll: true })"
-                                    :class="['px-3 py-1.5 text-sm rounded-lg transition-colors cursor-pointer', link.active ? 'bg-gradient-rose text-white' : 'text-surface-600 hover:bg-rose-50']"
-                                    v-html="link.label"
-                                />
-                            </template>
-                        </div>
-                    </template>
-                </div>
-            </Transition>
+            <!-- Empty State -->
+            <div v-if="!accounts?.length" class="glass-card p-12 text-center">
+                <svg class="w-16 h-16 text-surface-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
+                </svg>
+                <p class="font-semibold text-surface-600 text-lg">Belum ada rekening bank</p>
+                <p class="text-sm text-surface-500 mt-1">Klik tombol "+ Tambah" untuk menambahkan rekening bank pertama.</p>
+            </div>
         </div>
 
         <ConfirmModal
@@ -414,4 +326,59 @@ function submitEdit() {
 .slide-up-leave-active { transition: all 0.2s ease-in; }
 .slide-up-enter-from { opacity: 0; transform: translateY(16px); }
 .slide-up-leave-to { opacity: 0; transform: translateY(-8px); }
+
+.timeline-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.875rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    cursor: pointer;
+}
+
+.timeline-btn-active {
+    background: linear-gradient(135deg, #6d2b4f 0%, #c2185b 100%);
+    color: #fff;
+    border-color: #c2185b;
+    box-shadow: 0 2px 8px rgba(194, 24, 91, 0.25);
+}
+
+.timeline-btn-inactive {
+    background: #fff;
+    color: #64748b;
+    border-color: #e2e8f0;
+}
+
+.timeline-btn-inactive:hover {
+    border-color: #c2185b40;
+    color: #c2185b;
+    background: #fdf2f8;
+}
+
+.timeline-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    padding: 0 0.375rem;
+    height: 1.125rem;
+    font-size: 0.625rem;
+    font-weight: 700;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(4px);
+}
+
+.scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #c2185b40 transparent;
+}
+.scrollbar-thin::-webkit-scrollbar { height: 4px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: #c2185b40; border-radius: 9999px; }
 </style>

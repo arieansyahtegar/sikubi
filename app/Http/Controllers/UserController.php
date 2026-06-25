@@ -39,6 +39,7 @@ class UserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'password_hint' => User::generatePasswordHint($request->password),
             'role' => 'ADMIN_KEUANGAN',
         ]);
 
@@ -68,6 +69,7 @@ class UserController extends Controller
 
         if ($request->filled('password')) {
             $user->password = Hash::make($request->password);
+            $user->password_hint = User::generatePasswordHint($request->password);
         }
 
         $user->save();

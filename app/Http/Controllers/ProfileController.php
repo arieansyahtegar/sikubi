@@ -55,6 +55,7 @@ class ProfileController extends Controller
 
         $request->user()->update([
             'password' => Hash::make($request->password),
+            'password_hint' => \App\Models\User::generatePasswordHint($request->password),
         ]);
 
         return back();
