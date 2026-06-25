@@ -122,8 +122,8 @@ function submitLeaderAction(flagId) {
             <!-- Header -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h1 class="page-title text-lg sm:text-2xl">Otorisasi & Pengawasan Mutasi</h1>
-                    <p class="text-xs sm:text-sm text-surface-600 mt-0.5">Tinjau transaksi tidak wajar, kepatuhan nominal, dan otorisasi mutasi luar biasa</p>
+                    <h1 class="page-title text-lg sm:text-2xl">Otorisasi & Persetujuan Mutasi</h1>
+                    <p class="text-xs sm:text-sm text-surface-600 mt-0.5">Tinjau temuan transaksi luar biasa dan berikan keputusan otorisasi secara cepat.</p>
                 </div>
                 <div class="flex items-center gap-2 w-full sm:w-auto">
                     <select v-model="selectedAccountId" @change="onAccountChange" class="filter-field w-full sm:!w-auto !pr-8 sm:max-w-[200px] flex-shrink-0">
@@ -189,10 +189,11 @@ function submitLeaderAction(flagId) {
             <!-- Anomaly List -->
             <div class="space-y-3">
                 <div
-                    v-for="flag in anomalies.data"
+                    v-for="(flag, index) in anomalies.data"
                     :key="flag.id"
-                    class="glass-card overflow-hidden group transition-all duration-300 hover:shadow-card-hover"
+                    class="glass-card overflow-hidden group transition-all duration-300 hover:shadow-card-hover animate-scale-in"
                     :class="expandedId === flag.id ? 'ring-1 ring-rose-200' : ''"
+                    :style="{ 'animation-delay': `${index * 75}ms`, 'animation-fill-mode': 'both' }"
                 >
                     <!-- Clickable header row -->
                     <div
@@ -311,22 +312,27 @@ function submitLeaderAction(flagId) {
                             </div>
 
                             <!-- Leadership Decision / Follow Up Form -->
-                            <div v-if="needsLeaderAction(flag)" class="rounded-xl border border-amber-200 bg-amber-50/10 p-4 shadow-sm space-y-4">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <div class="w-6 h-6 rounded-lg bg-amber-500 flex items-center justify-center animate-pulse">
-                                        <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                            <div v-if="needsLeaderAction(flag)" class="glass-card !bg-white/90 p-5 border border-rose-100 shadow-soft space-y-4 animate-scale-in">
+                                <div class="flex items-center gap-3 mb-1">
+                                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-50 flex items-center justify-center text-white shadow-soft flex-shrink-0 animate-pulse-soft">
+                                        <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                        </svg>
                                     </div>
-                                    <h4 class="text-xs font-bold text-amber-800 uppercase tracking-wider">Tindak Lanjut Keputusan Pimpinan</h4>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-plum uppercase tracking-wider">Tindak Lanjut Keputusan Pimpinan</h4>
+                                        <p class="text-[10px] text-surface-500 mt-0.5">Tentukan persetujuan atas keabsahan transaksi anomali ini</p>
+                                    </div>
                                 </div>
 
-                                <div class="grid grid-cols-2 gap-3">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <button 
                                         type="button" 
                                         @click="isApproved = true"
                                         :class="[
                                             'flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border font-bold text-xs transition-all shadow-sm',
                                             isApproved 
-                                                ? 'bg-emerald-500 border-emerald-600 text-white scale-[1.02]' 
+                                                ? 'bg-emerald-500 border-emerald-600 text-white scale-[1.02] shadow-md shadow-emerald-500/20' 
                                                 : 'bg-white border-surface-200 text-surface-600 hover:bg-emerald-50 hover:border-emerald-200'
                                         ]"
                                     >
@@ -339,22 +345,22 @@ function submitLeaderAction(flagId) {
                                         :class="[
                                             'flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border font-bold text-xs transition-all shadow-sm',
                                             !isApproved 
-                                                ? 'bg-rose-600 border-rose-700 text-white scale-[1.02]' 
+                                                ? 'bg-rose-600 border-rose-700 text-white scale-[1.02] shadow-md shadow-rose-500/20' 
                                                 : 'bg-white border-surface-200 text-surface-600 hover:bg-rose-50 hover:border-rose-200'
                                         ]"
                                     >
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                        Tolak / Perlu Investigasi
+                                        Tolak / Investigasi
                                     </button>
                                 </div>
 
                                 <!-- Note Textarea -->
                                 <div class="space-y-1.5">
-                                    <label class="text-[10px] font-bold text-surface-500 uppercase tracking-wider">Catatan Keputusan Pimpinan:</label>
+                                    <label class="label-text !text-[10px] font-bold uppercase tracking-wider">Catatan Keputusan Pimpinan:</label>
                                     <textarea 
                                         v-model="leaderNote"
                                         rows="2"
-                                        class="filter-field !py-2 !px-3 text-xs w-full focus:ring-amber-500 focus:border-amber-500"
+                                        class="input-field !text-xs !py-2 !px-3"
                                         placeholder="Masukkan alasan persetujuan atau penolakan transaksi di sini..."
                                     ></textarea>
                                 </div>
@@ -365,7 +371,7 @@ function submitLeaderAction(flagId) {
                                         :disabled="isSubmitting"
                                         :class="[
                                             'btn-primary text-xs !py-2 !px-5 font-bold',
-                                            isApproved ? '!bg-emerald-600 hover:!bg-emerald-700' : '!bg-rose-600 hover:!bg-rose-700'
+                                            isApproved ? '!bg-emerald-600 hover:!bg-emerald-700 !shadow-emerald-500/20' : '!bg-rose-600 hover:!bg-rose-700 !shadow-rose-500/20'
                                         ]"
                                     >
                                         {{ isSubmitting ? 'Memproses...' : 'Kirim Keputusan' }}

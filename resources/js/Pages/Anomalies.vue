@@ -1,6 +1,7 @@
 <script setup>
 import { Head, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import DateRangePicker from '@/Components/DateRangePicker.vue';
 import { ref, inject } from 'vue';
 
 const props = defineProps({
@@ -11,6 +12,31 @@ const props = defineProps({
 
 const addToast = inject('addToast');
 const page = usePage();
+
+const selectedAccountId = ref(props.filters?.account_id || '');
+const dateFilters = ref({
+    preset: props.filters?.preset || null,
+    date_from: props.filters?.date_from || null,
+    date_to: props.filters?.date_to || null,
+});
+
+function reloadData() {
+    router.get('/anomalies', {
+        severity: props.filters?.severity || 'ALL',
+        type: props.filters?.type || 'ALL',
+        account_id: selectedAccountId.value || undefined,
+        ...dateFilters.value,
+    }, { preserveState: true, preserveScroll: true });
+}
+
+function onDateUpdate(val) {
+    dateFilters.value = val;
+    reloadData();
+}
+
+function onAccountChange() {
+    reloadData();
+}
 
 // Review modal state
 const showReviewModal = ref(false);
@@ -31,15 +57,27 @@ const noteTemplates = [
 ];
 
 function setSeverity(severity) {
-    router.get('/anomalies', { severity, type: props.filters?.type || 'ALL' }, { preserveState: true, preserveScroll: true });
+    router.get('/anomalies', {
+        severity,
+        type: props.filters?.type || 'ALL',
+        account_id: selectedAccountId.value || undefined,
+        ...dateFilters.value,
+    }, { preserveState: true, preserveScroll: true });
 }
 
 function setType(type) {
-    router.get('/anomalies', { severity: props.filters?.severity || 'ALL', type }, { preserveState: true, preserveScroll: true });
+    router.get('/anomalies', {
+        severity: props.filters?.severity || 'ALL',
+        type,
+        account_id: selectedAccountId.value || undefined,
+        ...dateFilters.value,
+    }, { preserveState: true, preserveScroll: true });
 }
 
 function runDetection() {
-    router.post('/anomalies/detect', {}, {
+    router.post('/anomalies/detect', {
+        account_id: selectedAccountId.value || undefined,
+    }, {
         preserveScroll: true,
         onSuccess: () => addToast?.('Deteksi anomali selesai', 'success'),
     });
@@ -113,13 +151,25 @@ function subtypeLabel(method) {
             <!-- Header -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h1 class="page-title text-lg sm:text-2xl">Pengawasan Transaksi</h1>
-                    <p class="text-xs sm:text-sm text-surface-600 mt-0.5">Tinjau mutasi luar biasa dan lakukan verifikasi kepatuhan internal</p>
+                    <h1 class="page-title text-lg sm:text-2xl">Pusat Pengawasan Transaksi</h1>
+                    <p class="text-xs sm:text-sm text-surface-600 mt-0.5">Pantau mutasi luar biasa secara real-time dan verifikasi kepatuhan transaksi di sini.</p>
                 </div>
-                <button @click="runDetection" class="btn-primary text-xs !py-1.5 !px-4 sm:!py-2.5 sm:!px-5">
-                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
-                    Pindai Mutasi
-                </button>
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <select v-model="selectedAccountId" @change="onAccountChange" class="filter-field w-full sm:!w-auto !pr-8 sm:max-w-[200px] flex-shrink-0">
+                        <option value="">Semua Rekening</option>
+                        <option value="cash">Transaksi Tunai</option>
+                        <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
+                    </select>
+                    <button @click="runDetection" class="btn-primary text-xs !py-1.5 !px-4 sm:!py-2.5 sm:!px-5 flex-shrink-0">
+                        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                        Pindai Mutasi
+                    </button>
+                </div>
+            </div>
+
+            <!-- Timeline / Date Range Picker -->
+            <div>
+                <DateRangePicker :initial-from="filters?.date_from" :initial-to="filters?.date_to" :initial-preset="filters?.preset" @update="onDateUpdate" />
             </div>
 
             <!-- Filters -->
@@ -159,7 +209,7 @@ function subtypeLabel(method) {
 
             <!-- Anomaly List -->
             <div class="space-y-3">
-                <div v-for="flag in anomalies.data" :key="flag.id" class="glass-card p-4 sm:p-5">
+                <div v-for="(flag, index) in anomalies.data" :key="flag.id" class="glass-card p-4 sm:p-5 animate-scale-in" :style="{ 'animation-delay': `${index * 60}ms`, 'animation-fill-mode': 'both' }">
                     <div class="flex flex-col sm:flex-row sm:items-start gap-3">
                         <div class="flex-1 min-w-0">
                             <!-- Type & Severity badges -->
@@ -229,19 +279,47 @@ function subtypeLabel(method) {
                     <p class="text-xs text-surface-400 mt-1">Klik "Pindai Mutasi" untuk memulai analisis kepatuhan internal.</p>
                 </div>
             </div>
+
+            <!-- Pagination -->
+            <div v-if="anomalies.last_page > 1" class="flex justify-center gap-1.5 sm:gap-2 mt-6 flex-wrap">
+                <template v-for="(link, idx) in anomalies.links" :key="link.url || 'ellipsis-' + idx">
+                    <span v-if="link.url"
+                        @click="router.get(link.url)"
+                        :class="['px-3 py-1.5 text-sm rounded-lg transition-colors cursor-pointer', link.active ? 'bg-gradient-rose text-white' : 'text-surface-600 hover:bg-rose-50']"
+                        v-html="link.label"
+                    />
+                </template>
+            </div>
         </div>
 
         <!-- Review Modal -->
         <Teleport to="body">
             <Transition name="fade">
                 <div v-if="showReviewModal" class="fixed inset-0 bg-plum/30 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="showReviewModal = false">
-                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 animate-fade-in">
-                        <h3 class="text-lg font-display font-bold text-plum mb-1">
-                            {{ isDismissing ? '⚠ Abaikan Anomali' : '✍ Tinjau Anomali' }}
-                        </h3>
-                        <p class="text-xs text-surface-500 mb-4">
-                            {{ isDismissing ? 'Berikan catatan mengapa anomali ini diabaikan.' : 'Berikan catatan singkat hasil tinjauan Anda.' }}
-                        </p>
+                    <div class="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-lg p-6 animate-scale-in border border-white/60">
+                        <div class="flex items-start justify-between pb-4 border-b border-rose-100/50 mb-4">
+                            <div class="flex items-center gap-3">
+                                <div :class="['w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-soft flex-shrink-0', isDismissing ? 'bg-gradient-to-br from-amber-400 to-amber-500' : 'bg-gradient-rose']">
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path v-if="isDismissing" stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                                        <path v-else stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-base font-bold text-plum">
+                                        {{ isDismissing ? 'Abaikan Anomali' : 'Tinjau Temuan Anomali' }}
+                                    </h3>
+                                    <p class="text-xs text-surface-500 mt-0.5">
+                                        {{ isDismissing ? 'Berikan catatan mengapa anomali ini diabaikan.' : 'Berikan catatan singkat hasil tinjauan Anda.' }}
+                                    </p>
+                                </div>
+                            </div>
+                            <button @click="showReviewModal = false" class="text-surface-400 hover:text-plum p-1.5 rounded-lg hover:bg-rose-50/50 transition-colors">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
 
                         <!-- Transaction Preview -->
                         <div v-if="reviewingFlag" class="bg-cream-100 rounded-xl p-3 mb-4">
@@ -290,12 +368,12 @@ function subtypeLabel(method) {
                         </div>
 
                         <!-- Actions -->
-                        <div class="flex gap-2 justify-end">
-                            <button @click="showReviewModal = false" class="btn-ghost text-sm">Batal</button>
+                        <div class="flex gap-2 justify-end pt-3 mt-1 border-t border-rose-100/30">
+                            <button @click="showReviewModal = false" class="btn-ghost text-xs">Batal</button>
                             <button
                                 @click="submitReview"
                                 :class="isDismissing ? 'btn-secondary' : 'btn-primary'"
-                                class="text-sm"
+                                class="text-xs"
                             >
                                 {{ isDismissing ? 'Abaikan' : 'Simpan Tinjauan' }}
                             </button>

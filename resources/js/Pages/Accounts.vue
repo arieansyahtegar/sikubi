@@ -85,6 +85,17 @@ watch(() => props.filters, (f) => {
     dateTo.value = f?.date_to || '';
 }, { deep: true });
 
+function viewTransactions(acc) {
+    router.visit('/transactions', {
+        data: {
+            account_id: acc.id,
+            date_from: dateFrom.value || undefined,
+            date_to: dateTo.value || undefined,
+        },
+        preserveState: false
+    });
+}
+
 function submit() {
     form.post('/accounts', {
         preserveScroll: true,
@@ -155,11 +166,25 @@ function submitEdit() {
             <!-- Add Account Form -->
             <Transition name="slide-up">
                 <div v-if="showForm" class="glass-card p-6">
-                    <form @submit.prevent="submit" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="flex items-center gap-2.5 mb-4 pb-3 border-b border-rose-100/40">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-rose flex items-center justify-center text-white">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-plum">Tambah Rekening Bank</h3>
+                            <p class="text-xs text-surface-500">Hubungkan rekening koran bank baru ke sistem</p>
+                        </div>
+                    </div>
+                    <form @submit.prevent="submit" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                         <div><label class="label-text">Nama Bank</label><input v-model="form.bank_name" class="input-field" placeholder="BCA" required /></div>
                         <div><label class="label-text">No. Rekening</label><input v-model="form.account_number" class="input-field" placeholder="1234567890" required /></div>
-                        <div><label class="label-text">Alias</label><input v-model="form.account_alias" class="input-field" placeholder="BCA Utama" /></div>
-                        <div class="flex items-end"><button type="submit" :disabled="form.processing" class="btn-primary w-full">Simpan</button></div>
+                        <div><label class="label-text">Alias Rekening</label><input v-model="form.account_alias" class="input-field" placeholder="BCA Utama" /></div>
+                        <div class="sm:col-span-2 md:col-span-3 flex justify-end gap-2 pt-3 mt-1 border-t border-rose-100/30">
+                            <button type="button" @click="showForm = false" class="btn-ghost text-xs">Batal</button>
+                            <button type="submit" :disabled="form.processing" class="btn-primary text-xs">Simpan Rekening</button>
+                        </div>
                     </form>
                 </div>
             </Transition>
@@ -211,12 +236,14 @@ function submitEdit() {
 
             <!-- Bank Account Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div v-for="acc in accounts" :key="acc.id"
-                    class="glass-card-hover p-5 transition-all border-2 border-transparent hover:border-rose-100/60"
+                <div v-for="(acc, index) in accounts" :key="acc.id"
+                    @click="viewTransactions(acc)"
+                    class="glass-card-hover p-5 border-2 border-transparent hover:border-rose-gold/40 animate-scale-in cursor-pointer hover:shadow-card-hover transition-all duration-300"
+                    :style="{ 'animation-delay': `${index * 80}ms`, 'animation-fill-mode': 'both' }"
                 >
                     <div class="flex items-start justify-between">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-rose flex items-center justify-center text-white font-bold text-sm">
-                            {{ acc.bank_name.substring(0, 2) }}
+                        <div class="w-10 h-10 rounded-xl bg-gradient-rose flex items-center justify-center text-white font-bold text-xs tracking-wider flex-shrink-0">
+                            {{ acc.bank_name.substring(0, 3).toUpperCase() }}
                         </div>
                         <div class="flex items-center gap-1">
                             <button @click.stop="openEditModal(acc)" class="text-surface-500 hover:text-plum transition-colors p-1 rounded-lg hover:bg-rose-50" title="Ubah rekening">
@@ -269,12 +296,19 @@ function submitEdit() {
         <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
             <div class="fixed inset-0 bg-surface-900/60 backdrop-blur-sm transition-opacity" @click="closeEditModal"></div>
             
-            <div class="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left shadow-2xl transition-all border border-rose-50/50 animate-scale-in">
+            <div class="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white/95 backdrop-blur-md p-6 text-left shadow-2xl transition-all border border-white/60 animate-scale-in">
                 <!-- Modal Header -->
-                <div class="flex items-center justify-between pb-4 border-b border-rose-50/80">
-                    <div>
-                        <h3 class="text-lg font-bold text-plum">Ubah Rekening Bank</h3>
-                        <p class="text-xs text-surface-500 mt-0.5">Ubah nama, nomor, dan alias rekening bank</p>
+                <div class="flex items-start justify-between pb-4 border-b border-rose-100/50">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-rose flex items-center justify-center text-white shadow-soft flex-shrink-0">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-plum">Ubah Rekening Bank</h3>
+                            <p class="text-xs text-surface-500 mt-0.5">Ubah nama, nomor, dan alias rekening bank</p>
+                        </div>
                     </div>
                     <button @click="closeEditModal" class="text-surface-400 hover:text-plum p-1.5 rounded-lg hover:bg-rose-50/50 transition-colors">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -286,16 +320,16 @@ function submitEdit() {
                 <!-- Modal Body -->
                 <form @submit.prevent="submitEdit" class="space-y-4 pt-4">
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-surface-600 mb-1">Nama Bank</label>
-                        <input v-model="editForm.bank_name" class="input-field !rounded-xl !py-2" placeholder="BCA" required />
+                        <label class="label-text">Nama Bank</label>
+                        <input v-model="editForm.bank_name" class="input-field" placeholder="BCA" required />
                     </div>
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-surface-600 mb-1">No. Rekening</label>
-                        <input v-model="editForm.account_number" class="input-field !rounded-xl !py-2" placeholder="1234567890" required />
+                        <label class="label-text">No. Rekening</label>
+                        <input v-model="editForm.account_number" class="input-field" placeholder="1234567890" required />
                     </div>
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-surface-600 mb-1">Alias Rekening</label>
-                        <input v-model="editForm.account_alias" class="input-field !rounded-xl !py-2" placeholder="BCA Utama" />
+                        <label class="label-text">Alias Rekening</label>
+                        <input v-model="editForm.account_alias" class="input-field" placeholder="BCA Utama" />
                     </div>
 
                     <!-- Action Buttons -->

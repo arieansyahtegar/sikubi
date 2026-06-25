@@ -88,7 +88,17 @@ function formatDate(d) {
             <!-- Add Form -->
             <Transition name="slide-up">
                 <div v-if="showForm" class="glass-card p-6">
-                    <h3 class="text-sm font-semibold text-plum mb-4">Buat Akun Admin Baru</h3>
+                    <div class="flex items-center gap-2.5 mb-4 pb-3 border-b border-rose-100/40">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-rose flex items-center justify-center text-white">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-plum">Tambah Admin Baru</h3>
+                            <p class="text-xs text-surface-500">Buat akun untuk staf Admin Keuangan baru</p>
+                        </div>
+                    </div>
                     <form @submit.prevent="submit" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="label-text">Nama Lengkap</label>
@@ -121,11 +131,9 @@ function formatDate(d) {
                                 </button>
                             </div>
                         </div>
-                        <div class="sm:col-span-2">
-                            <button type="submit" :disabled="form.processing" class="btn-primary">
-                                <svg v-if="form.processing" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                                Buat Akun
-                            </button>
+                        <div class="sm:col-span-2 flex justify-end gap-2 pt-3 mt-1 border-t border-rose-100/30">
+                            <button type="button" @click="showForm = false" class="btn-ghost text-xs">Batal</button>
+                            <button type="submit" :disabled="form.processing" class="btn-primary text-xs">Buat Akun</button>
                         </div>
                     </form>
                 </div>
@@ -137,7 +145,7 @@ function formatDate(d) {
                     <table class="data-table">
                         <thead><tr><th>Nama</th><th>Email</th><th>Terakhir Login</th><th>Dibuat</th><th></th></tr></thead>
                         <tbody>
-                            <tr v-for="u in users" :key="u.id">
+                            <tr v-for="(u, index) in users" :key="u.id" class="animate-fade-in" :style="{ 'animation-delay': `${index * 50}ms`, 'animation-fill-mode': 'both' }">
                                 <td class="font-semibold text-plum">{{ u.name }}</td>
                                 <td class="text-sm">{{ u.email }}</td>
                                 <td class="text-xs text-surface-500">{{ formatDate(u.last_login_at) }}</td>
@@ -158,7 +166,7 @@ function formatDate(d) {
                 </div>
                 <!-- Mobile -->
                 <div class="sm:hidden p-4 space-y-3">
-                    <div v-for="u in users" :key="u.id" class="mobile-card">
+                    <div v-for="(u, index) in users" :key="u.id" class="mobile-card animate-scale-in" :style="{ 'animation-delay': `${index * 60}ms`, 'animation-fill-mode': 'both' }">
                         <div class="flex items-center justify-between mb-1">
                             <p class="font-semibold text-plum">{{ u.name }}</p>
                             <div class="flex items-center gap-1">
@@ -175,15 +183,29 @@ function formatDate(d) {
                     <p class="text-surface-500">Belum ada akun Admin Keuangan. Klik "+ Tambah Admin" untuk membuat.</p>
                 </div>
             </div>
-        </div>
-
-        <!-- Edit Modal -->
+        </div>        <!-- Edit Modal -->
         <Teleport to="body">
             <Transition name="fade">
                 <div v-if="showEditModal" class="fixed inset-0 bg-plum/30 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="showEditModal = false">
-                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 animate-fade-in">
-                        <h3 class="text-lg font-display font-bold text-plum mb-1">Edit Admin</h3>
-                        <p class="text-xs text-surface-500 mb-4">Perbarui data akun <strong>{{ editingUser?.name }}</strong></p>
+                    <div class="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-lg p-6 animate-scale-in border border-white/60">
+                        <div class="flex items-start justify-between pb-4 border-b border-rose-100/50 mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-gradient-rose flex items-center justify-center text-white shadow-soft flex-shrink-0">
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-base font-bold text-plum">Edit Admin</h3>
+                                    <p class="text-xs text-surface-500 mt-0.5">Perbarui data akun <strong>{{ editingUser?.name }}</strong></p>
+                                </div>
+                            </div>
+                            <button @click="showEditModal = false" class="text-surface-400 hover:text-plum p-1.5 rounded-lg hover:bg-rose-50/50 transition-colors">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
 
                         <form @submit.prevent="submitEdit" class="space-y-4">
                             <div>
@@ -218,10 +240,10 @@ function formatDate(d) {
                                 </div>
                             </div>
 
-                            <div class="flex gap-2 justify-end pt-2">
-                                <button type="button" @click="showEditModal = false" class="btn-ghost text-sm">Batal</button>
-                                <button type="submit" :disabled="editForm.processing" class="btn-primary text-sm">
-                                    <svg v-if="editForm.processing" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                            <div class="flex gap-2 justify-end pt-3 mt-1 border-t border-rose-100/30">
+                                <button type="button" @click="showEditModal = false" class="btn-ghost text-xs">Batal</button>
+                                <button type="submit" :disabled="editForm.processing" class="btn-primary text-xs">
+                                    <svg v-if="editForm.processing" class="w-4 h-4 animate-spin text-white mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
                                     Simpan Perubahan
                                 </button>
                             </div>

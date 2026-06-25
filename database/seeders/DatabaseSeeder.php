@@ -165,7 +165,8 @@ class DatabaseSeeder extends Seeder
         // ── Bank Accounts ──
         BankAccount::create(['bank_name' => 'BCA', 'account_number' => '1234567890', 'account_alias' => 'BCA Utama']);
         BankAccount::create(['bank_name' => 'Mandiri', 'account_number' => '0987654321', 'account_alias' => 'Mandiri Operasional']);
-        $this->command->info('  ✓ Created 2 bank accounts');
+        BankAccount::create(['bank_name' => 'BRI', 'account_number' => '5678901234', 'account_alias' => 'BRI Utama']);
+        $this->command->info('  ✓ Created 3 bank accounts');
 
         // No demo transactions — user will import their own CSV
         $this->command->info('');

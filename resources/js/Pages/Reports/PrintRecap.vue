@@ -131,13 +131,13 @@ const reportReadyMessage = computed(() => {
                         <img src="/images/bigenmi_sakura_decoration.png" alt="" class="report-hero-bg" aria-hidden="true" />
                         <div class="report-hero-overlay"></div>
                         <div class="relative z-10 text-center px-6 py-10 sm:py-12">
-                            <h1 class="text-xl sm:text-2xl font-display font-bold text-plum mb-2">Cetak Laporan Keuangan</h1>
+                            <h1 class="text-xl sm:text-2xl font-display font-bold text-plum mb-2">Cetak & Unduh Laporan Keuangan</h1>
                             <p class="text-xs sm:text-sm text-surface-700 max-w-lg mx-auto leading-relaxed font-medium">
-                                Modul kompilasi dan pratinjau laporan keuangan interaktif PT Bigenmi secara profesional.
+                                Susun rekapitulasi, pantau neraca kas, dan ekspor laporan keuangan PT Bigenmi siap audit.
                             </p>
                             <div class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-rose-50/95 text-[10px] font-bold uppercase tracking-wider text-rose-600 border border-rose-100 shadow-sm mt-4 backdrop-blur-sm">
                                 <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
-                                Dokumen Cetak Standar Kepatuhan Audit
+                                Standar Laporan Kepatuhan Internal & Audit
                             </div>
                         </div>
                     </div>

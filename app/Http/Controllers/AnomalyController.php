@@ -16,10 +16,18 @@ class AnomalyController extends Controller
     {
         $severity = $request->input('severity', 'ALL');
         $type = $request->input('type', 'ALL');
+        $accountId = $request->input('account_id');
+
+        // Resolve date range
+        [$dateFrom, $dateTo] = $this->resolveDateRange($request);
 
         $query = AnomalyFlag::with([
             'transaction' => fn($q) => $q->with('category:id,name,color', 'bankAccount:id,bank_name,account_alias'),
-        ])->orderByDesc('detected_at');
+        ])->whereHas('transaction', function ($q) use ($accountId, $dateFrom, $dateTo) {
+            $q->forAccount($accountId);
+            if ($dateFrom) $q->where('transaction_date', '>=', $dateFrom);
+            if ($dateTo) $q->where('transaction_date', '<=', $dateTo);
+        })->orderByDesc('detected_at');
 
         if ($severity !== 'ALL') {
             $query->where('severity', $severity);
@@ -37,6 +45,10 @@ class AnomalyController extends Controller
             'filters' => [
                 'severity' => $severity,
                 'type' => $type,
+                'account_id' => $accountId,
+                'date_from' => $dateFrom?->toDateString(),
+                'date_to' => $dateTo?->toDateString(),
+                'preset' => $request->input('preset'),
             ],
         ]);
     }

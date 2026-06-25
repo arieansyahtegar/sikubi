@@ -105,8 +105,18 @@ function bankLabel(rule) {
             <!-- Add Form (Admin only) -->
             <Transition name="slide-up">
                 <div v-if="showForm && canManage" class="glass-card p-6">
-                    <h3 class="text-sm font-semibold text-plum mb-4">Tambah Aturan Baru</h3>
-                    <form @submit.prevent="submit" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div class="flex items-center gap-3 mb-4 pb-3 border-b border-rose-100/40">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-rose flex items-center justify-center text-white shadow-soft">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-plum">Tambah Aturan Baru</h3>
+                            <p class="text-xs text-surface-500 mt-0.5">Buat aturan pencocokan otomatis kata kunci transaksi baru</p>
+                        </div>
+                    </div>
+                    <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                         <div>
                             <label class="label-text">Kategori</label>
                             <select v-model="form.category_id" class="input-field" required>
@@ -117,7 +127,6 @@ function bankLabel(rule) {
                         <div>
                             <label class="label-text">Kata Kunci</label>
                             <input v-model="form.pattern" class="input-field" placeholder="cth: SHOPEE" required />
-                            <p class="text-[10px] text-surface-500 mt-1">Kata yang dicari di deskripsi transaksi</p>
                         </div>
                         <div>
                             <label class="label-text">Tipe Pencocokan</label>
@@ -127,8 +136,20 @@ function bankLabel(rule) {
                                 <option value="REGEX">Regex</option>
                             </select>
                         </div>
-                        <div class="flex items-end">
-                            <button type="submit" :disabled="form.processing" class="btn-primary w-full">Simpan</button>
+                        <div>
+                            <label class="label-text">Rekening Bank</label>
+                            <select v-model="form.bank_account_id" class="input-field">
+                                <option value="">Global (Semua Rekening)</option>
+                                <option v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.account_alias || acc.bank_name }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="label-text">Prioritas</label>
+                            <input type="number" v-model="form.priority" class="input-field" min="1" placeholder="cth: 10" required />
+                        </div>
+                        <div class="lg:col-span-5 flex justify-end gap-2 pt-3 mt-1 border-t border-rose-100/30">
+                            <button type="button" @click="showForm = false" class="btn-ghost text-xs">Batal</button>
+                            <button type="submit" :disabled="form.processing" class="btn-primary text-xs">Simpan Aturan</button>
                         </div>
                     </form>
                 </div>
@@ -149,6 +170,7 @@ function bankLabel(rule) {
                             <tr>
                                 <th>Kata Kunci</th>
                                 <th>Tipe Pencocokan</th>
+                                <th>Rekening Bank</th>
                                 <th>Kategori</th>
                                 <th>Jumlah Cocok</th>
                                 <th>Prioritas</th>
@@ -156,16 +178,24 @@ function bankLabel(rule) {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="r in rules" :key="r.id">
-                                <td class="font-mono text-sm">{{ r.pattern }}</td>
+                            <tr v-for="(r, index) in rules" :key="r.id" class="animate-fade-in" :style="{ 'animation-delay': `${index * 50}ms`, 'animation-fill-mode': 'both' }">
+                                <td class="font-mono text-sm font-semibold text-plum">{{ r.pattern }}</td>
                                 <td><span class="badge-blue">{{ matchTypeLabels[r.match_type] || r.match_type }}</span></td>
+                                <td>
+                                    <span :class="[
+                                        'badge text-[10px] font-semibold',
+                                        r.bank_account ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-surface-100 text-surface-600 border border-surface-200'
+                                    ]">
+                                        {{ bankLabel(r) }}
+                                    </span>
+                                </td>
                                 <td>
                                     <span v-if="r.category" class="badge" :style="{ background: r.category.color + '15', color: r.category.color, border: '1px solid ' + r.category.color + '40' }">{{ r.category.name }}</span>
                                 </td>
-                                <td>{{ r.hit_count }}×</td>
-                                <td>{{ r.priority }}</td>
+                                <td class="font-semibold text-plum/85">{{ r.hit_count }}×</td>
+                                <td class="text-surface-600 font-medium">{{ r.priority }}</td>
                                 <td v-if="canManage">
-                                    <button @click="confirmDelete(r)" class="text-surface-500 hover:text-red-500 p-1 rounded-lg hover:bg-red-50 transition-colors" title="Hapus aturan">
+                                    <button @click="confirmDelete(r)" class="text-surface-500 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors" title="Hapus aturan">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
                                     </button>
                                 </td>
@@ -174,14 +204,17 @@ function bankLabel(rule) {
                     </table>
                 </div>
                 <div class="sm:hidden p-4 space-y-3">
-                    <div v-for="r in rules" :key="r.id" class="mobile-card">
+                    <div v-for="(r, index) in rules" :key="r.id" class="mobile-card animate-scale-in" :style="{ 'animation-delay': `${index * 60}ms`, 'animation-fill-mode': 'both' }">
                         <div class="flex items-center justify-between mb-1">
                             <p class="font-mono text-sm font-semibold">{{ r.pattern }}</p>
                             <button v-if="canManage" @click="confirmDelete(r)" class="text-surface-500 hover:text-red-500 p-1"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button>
                         </div>
-                        <div class="flex gap-2 flex-wrap">
+                        <div class="flex gap-1.5 flex-wrap">
                             <span class="badge-blue text-[10px]">{{ matchTypeLabels[r.match_type] || r.match_type }}</span>
-                            <span v-if="r.category" class="badge text-[10px]" :style="{ background: r.category.color + '15', color: r.category.color }">{{ r.category.name }}</span>
+                            <span :class="['badge text-[10px] font-semibold', r.bank_account ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-surface-100 text-surface-600 border border-surface-200']">
+                                {{ bankLabel(r) }}
+                            </span>
+                            <span v-if="r.category" class="badge text-[10px]" :style="{ background: r.category.color + '15', color: r.category.color, border: '1px solid ' + r.category.color + '30' }">{{ r.category.name }}</span>
                         </div>
                         <p class="text-[10px] text-surface-500 mt-1">Cocok: {{ r.hit_count }}× · Prioritas: {{ r.priority }}</p>
                     </div>

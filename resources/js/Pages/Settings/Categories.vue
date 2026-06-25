@@ -13,6 +13,18 @@ const selectedAccountId = ref(props.filters?.account_id || '');
 const selectedMonth = ref(props.filters?.month || '');
 const form = useForm({ name: '', type: 'CREDIT', color: '#E8637A', icon: 'folder', bank_account_id: '' });
 
+const presetColors = [
+    '#E8637A', // Sakura Rose
+    '#C49A4A', // Champagne Gold
+    '#4E2844', // Plum
+    '#10B981', // Emerald
+    '#EF4444', // Red
+    '#F59E0B', // Amber
+    '#3B82F6', // Blue
+    '#8B5CF6', // Violet
+    '#6B7280', // Slate
+];
+
 const showDeleteModal = ref(false);
 const deleteTarget = ref(null);
 
@@ -179,15 +191,70 @@ function bankLabel(cat) {
             <!-- Add Form (Admin only) -->
             <Transition name="slide-up">
                 <div v-if="showForm && canManage" class="glass-card p-6">
-                    <h3 class="text-sm font-semibold text-plum mb-4">Tambah Kategori Baru</h3>
-                    <form @submit.prevent="submit" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div><label class="label-text">Nama Kategori</label><input v-model="form.name" class="input-field" placeholder="cth: Pembelian Produk" required /></div>
-                        <div><label class="label-text">Tipe</label>
-                            <select v-model="form.type" class="input-field"><option value="DEBIT">Pemasukan (Uang Masuk)</option><option value="CREDIT">Pengeluaran (Uang Keluar)</option></select>
+                    <div class="flex items-center gap-2.5 mb-4 pb-3 border-b border-rose-100/40">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-rose flex items-center justify-center text-white">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+                            </svg>
                         </div>
-                        <div class="flex items-end gap-2">
-                            <div class="flex-shrink-0"><label class="label-text">Warna</label><input v-model="form.color" type="color" class="input-field h-[42px] w-14" /></div>
-                            <button type="submit" :disabled="form.processing" class="btn-primary flex-1">Simpan</button>
+                        <div>
+                            <h3 class="text-sm font-bold text-plum">Tambah Kategori Baru</h3>
+                            <p class="text-xs text-surface-500">Buat klasifikasi kategori transaksi baru</p>
+                        </div>
+                    </div>
+                    <form @submit.prevent="submit" class="space-y-4 animate-scale-in">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="label-text">Nama Kategori</label>
+                                <input v-model="form.name" class="input-field" placeholder="cth: Pembelian Produk" required />
+                            </div>
+                            <div>
+                                <label class="label-text">Tipe</label>
+                                <select v-model="form.type" class="input-field">
+                                    <option value="DEBIT">Pemasukan (Uang Masuk)</option>
+                                    <option value="CREDIT">Pengeluaran (Uang Keluar)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Warna Kategori -->
+                        <div class="space-y-2">
+                            <label class="label-text">Warna Kategori</label>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <button 
+                                    v-for="color in presetColors" 
+                                    :key="color"
+                                    type="button"
+                                    @click="form.color = color"
+                                    :class="[
+                                        'w-8 h-8 rounded-full border-2 transition-all transform active:scale-95 shadow-sm',
+                                        form.color === color ? 'border-plum scale-110 ring-2 ring-rose-200' : 'border-transparent hover:scale-105'
+                                    ]"
+                                    :style="{ backgroundColor: color }"
+                                    :title="color"
+                                />
+                                
+                                <div class="relative flex items-center gap-2">
+                                    <div 
+                                        :class="[
+                                            'w-8 h-8 rounded-full border-2 border-dashed border-surface-400 flex items-center justify-center cursor-pointer hover:border-rose-gold transition-colors relative overflow-hidden shadow-sm',
+                                            !presetColors.includes(form.color) ? 'border-plum scale-110 ring-2 ring-rose-200' : ''
+                                        ]"
+                                        :style="!presetColors.includes(form.color) ? { backgroundColor: form.color } : {}"
+                                    >
+                                        <svg v-if="presetColors.includes(form.color)" class="w-4 h-4 text-surface-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                        </svg>
+                                        <input v-model="form.color" type="color" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+                                    </div>
+                                    <span class="text-xs text-surface-500 font-medium">Kustom</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end gap-2 pt-3 border-t border-rose-100/30">
+                            <button type="button" @click="showForm = false" class="btn-ghost text-xs">Batal</button>
+                            <button type="submit" :disabled="form.processing" class="btn-primary text-xs !py-2.5">Simpan Kategori</button>
                         </div>
                     </form>
                 </div>
@@ -244,7 +311,7 @@ function bankLabel(cat) {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="cat in categories" :key="cat.id" :class="cat.is_suggested ? 'bg-amber-50/30' : ''">
+                            <tr v-for="(cat, index) in categories" :key="cat.id" :class="[cat.is_suggested ? 'bg-amber-50/30' : '', 'animate-fade-in']" :style="{ 'animation-delay': `${index * 50}ms`, 'animation-fill-mode': 'both' }">
                                 <td>
                                     <div class="flex items-center gap-2">
                                         <span class="w-3 h-3 rounded-full flex-shrink-0" :style="{ background: cat.color }" />
@@ -281,7 +348,7 @@ function bankLabel(cat) {
                     </table>
                 </div>
                 <div class="sm:hidden p-4 space-y-3">
-                    <div v-for="cat in categories" :key="cat.id" class="mobile-card space-y-2">
+                    <div v-for="(cat, index) in categories" :key="cat.id" class="mobile-card space-y-2 animate-scale-in" :style="{ 'animation-delay': `${index * 60}ms`, 'animation-fill-mode': 'both' }">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="w-3 h-3 rounded-full flex-shrink-0" :style="{ background: cat.color }" />
