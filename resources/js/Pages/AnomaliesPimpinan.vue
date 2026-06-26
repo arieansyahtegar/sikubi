@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, inject } from 'vue';
+import { ref, computed, inject, onMounted } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import DateRangePicker from '@/Components/DateRangePicker.vue';
@@ -113,6 +113,27 @@ function submitLeaderAction(flagId) {
         }
     });
 }
+
+onMounted(() => {
+    const params = new URLSearchParams(window.location.search);
+    const flagId = params.get('flag_id');
+    if (flagId) {
+        const id = parseInt(flagId);
+        if (!isNaN(id)) {
+            expandedId.value = id;
+            setTimeout(() => {
+                const el = document.getElementById('flag-card-' + id);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.classList.add('transition-all', 'duration-500', 'ring-2', 'ring-rose-500/80', 'ring-offset-2', 'scale-[1.01]', 'shadow-lg');
+                    setTimeout(() => {
+                        el.classList.remove('ring-2', 'ring-rose-500/80', 'ring-offset-2', 'scale-[1.01]', 'shadow-lg');
+                    }, 4000);
+                }
+            }, 300);
+        }
+    }
+});
 </script>
 
 <template>
@@ -191,6 +212,7 @@ function submitLeaderAction(flagId) {
                 <div
                     v-for="(flag, index) in anomalies.data"
                     :key="flag.id"
+                    :id="'flag-card-' + flag.id"
                     class="glass-card overflow-hidden group transition-all duration-300 hover:shadow-card-hover animate-scale-in"
                     :class="expandedId === flag.id ? 'ring-1 ring-rose-200' : ''"
                     :style="{ 'animation-delay': `${index * 75}ms`, 'animation-fill-mode': 'both' }"

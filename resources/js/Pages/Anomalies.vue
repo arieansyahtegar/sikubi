@@ -2,7 +2,7 @@
 import { Head, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import DateRangePicker from '@/Components/DateRangePicker.vue';
-import { ref, inject } from 'vue';
+import { ref, inject, onMounted } from 'vue';
 
 const props = defineProps({
     anomalies: Object,
@@ -142,6 +142,26 @@ function subtypeLabel(method) {
     if (method === 'EXPENSE_MISMATCH') return 'Tidak Seimbang';
     return method;
 }
+
+onMounted(() => {
+    const params = new URLSearchParams(window.location.search);
+    const flagId = params.get('flag_id');
+    if (flagId) {
+        const id = parseInt(flagId);
+        if (!isNaN(id)) {
+            setTimeout(() => {
+                const el = document.getElementById('flag-card-' + id);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.classList.add('transition-all', 'duration-500', 'ring-2', 'ring-rose-500/80', 'ring-offset-2', 'scale-[1.01]', 'shadow-lg');
+                    setTimeout(() => {
+                        el.classList.remove('ring-2', 'ring-rose-500/80', 'ring-offset-2', 'scale-[1.01]', 'shadow-lg');
+                    }, 4000);
+                }
+            }, 300);
+        }
+    }
+});
 </script>
 
 <template>
@@ -209,7 +229,7 @@ function subtypeLabel(method) {
 
             <!-- Anomaly List -->
             <div class="space-y-3">
-                <div v-for="(flag, index) in anomalies.data" :key="flag.id" class="glass-card p-4 sm:p-5 animate-scale-in" :style="{ 'animation-delay': `${index * 60}ms`, 'animation-fill-mode': 'both' }">
+                <div v-for="(flag, index) in anomalies.data" :key="flag.id" :id="'flag-card-' + flag.id" class="glass-card p-4 sm:p-5 animate-scale-in" :style="{ 'animation-delay': `${index * 60}ms`, 'animation-fill-mode': 'both' }">
                     <div class="flex flex-col sm:flex-row sm:items-start gap-3">
                         <div class="flex-1 min-w-0">
                             <!-- Type & Severity badges -->

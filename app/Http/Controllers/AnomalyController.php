@@ -17,17 +17,38 @@ class AnomalyController extends Controller
         $severity = $request->input('severity', 'ALL');
         $type = $request->input('type', 'ALL');
         $accountId = $request->input('account_id');
+        $flagId = $request->input('flag_id');
 
         // Resolve date range
         [$dateFrom, $dateTo] = $this->resolveDateRange($request);
 
         $query = AnomalyFlag::with([
             'transaction' => fn($q) => $q->with('category:id,name,color', 'bankAccount:id,bank_name,account_alias'),
-        ])->whereHas('transaction', function ($q) use ($accountId, $dateFrom, $dateTo) {
-            $q->forAccount($accountId);
-            if ($dateFrom) $q->where('transaction_date', '>=', $dateFrom);
-            if ($dateTo) $q->where('transaction_date', '<=', $dateTo);
-        })->orderByDesc('detected_at');
+        ]);
+
+        if ($flagId) {
+            $query->where(function ($q) use ($flagId, $accountId, $dateFrom, $dateTo) {
+                $q->where('id', $flagId)
+                  ->orWhere(function ($sq) use ($accountId, $dateFrom, $dateTo) {
+                      $sq->whereHas('transaction', function ($tq) use ($accountId, $dateFrom, $dateTo) {
+                          $tq->forAccount($accountId);
+                          if ($dateFrom) $tq->where('transaction_date', '>=', $dateFrom);
+                          if ($dateTo) $tq->where('transaction_date', '<=', $dateTo);
+                      });
+                  });
+            });
+        } else {
+            $query->whereHas('transaction', function ($q) use ($accountId, $dateFrom, $dateTo) {
+                $q->forAccount($accountId);
+                if ($dateFrom) $q->where('transaction_date', '>=', $dateFrom);
+                if ($dateTo) $q->where('transaction_date', '<=', $dateTo);
+            });
+        }
+
+        if ($flagId) {
+            $query->orderByRaw("CASE WHEN id = ? THEN 0 ELSE 1 END", [$flagId]);
+        }
+        $query->orderByDesc('detected_at');
 
         if ($severity !== 'ALL') {
             $query->where('severity', $severity);
@@ -49,6 +70,7 @@ class AnomalyController extends Controller
                 'date_from' => $dateFrom?->toDateString(),
                 'date_to' => $dateTo?->toDateString(),
                 'preset' => $request->input('preset'),
+                'flag_id' => $flagId,
             ],
         ]);
     }
@@ -136,17 +158,38 @@ class AnomalyController extends Controller
     public function pimpinanIndex(Request $request)
     {
         $accountId = $request->input('account_id');
+        $flagId = $request->input('flag_id');
 
         // Resolve date range
         [$dateFrom, $dateTo] = $this->resolveDateRange($request);
 
         $query = AnomalyFlag::with([
             'transaction' => fn($q) => $q->with('bankAccount:id,bank_name,account_alias')
-        ])->whereHas('transaction', function ($q) use ($accountId, $dateFrom, $dateTo) {
-            $q->forAccount($accountId);
-            if ($dateFrom) $q->where('transaction_date', '>=', $dateFrom);
-            if ($dateTo) $q->where('transaction_date', '<=', $dateTo);
-        })->orderByDesc('created_at');
+        ]);
+
+        if ($flagId) {
+            $query->where(function ($q) use ($flagId, $accountId, $dateFrom, $dateTo) {
+                $q->where('id', $flagId)
+                  ->orWhere(function ($sq) use ($accountId, $dateFrom, $dateTo) {
+                      $sq->whereHas('transaction', function ($tq) use ($accountId, $dateFrom, $dateTo) {
+                          $tq->forAccount($accountId);
+                          if ($dateFrom) $tq->where('transaction_date', '>=', $dateFrom);
+                          if ($dateTo) $tq->where('transaction_date', '<=', $dateTo);
+                      });
+                  });
+            });
+        } else {
+            $query->whereHas('transaction', function ($q) use ($accountId, $dateFrom, $dateTo) {
+                $q->forAccount($accountId);
+                if ($dateFrom) $q->where('transaction_date', '>=', $dateFrom);
+                if ($dateTo) $q->where('transaction_date', '<=', $dateTo);
+            });
+        }
+
+        if ($flagId) {
+            $query->orderByRaw("CASE WHEN id = ? THEN 0 ELSE 1 END", [$flagId]);
+        }
+        $query->orderByDesc('created_at');
 
         // Stats calculation
         $unreviewedCount = (clone $query)->where('is_reviewed', false)->count();
@@ -181,6 +224,7 @@ class AnomalyController extends Controller
                 'date_from' => $dateFrom?->toDateString(),
                 'date_to' => $dateTo?->toDateString(),
                 'preset' => $request->input('preset'),
+                'flag_id' => $flagId,
             ],
             'stats' => [
                 'unreviewedCount' => $unreviewedCount,

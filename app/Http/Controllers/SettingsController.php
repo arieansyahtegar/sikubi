@@ -54,15 +54,10 @@ class SettingsController extends Controller
         }
         $availableMonths = $monthsQuery->pluck('month_key')->toArray();
 
-        // Default to current month if not specified
-        if (!$month && !empty($availableMonths)) {
-            $month = $availableMonths[0]; // most recent month
-        }
-
         $query = Category::with('bankAccount:id,bank_name,account_alias');
 
         // Add transaction count filtered by month
-        if ($month) {
+        if ($month && $month !== 'all') {
             $startOfMonth = \Carbon\Carbon::parse($month . '-01')->startOfMonth();
             $endOfMonth = \Carbon\Carbon::parse($month . '-01')->endOfMonth();
 
@@ -73,6 +68,7 @@ class SettingsController extends Controller
             ]);
         } else {
             $query->withCount('transactions');
+            $month = '';
         }
 
         if ($effectiveAccountId) {

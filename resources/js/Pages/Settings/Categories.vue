@@ -130,24 +130,47 @@ function bankLabel(cat) {
                 </div>
             </div>
 
-            <!-- Month Filter Panel -->
-            <div v-if="availableMonths?.length > 0" class="glass-card p-3 sm:p-4">
-                <div class="flex items-center gap-3 mb-2">
-                    <svg class="w-4 h-4 text-surface-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
-                    <span class="text-xs font-semibold text-surface-600 uppercase tracking-wider">Filter Bulan</span>
+            <!-- Month Filter Panel (Timeline Period style) -->
+            <div v-if="availableMonths?.length > 0" class="glass-card p-4 sm:p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-lg bg-gradient-rose flex items-center justify-center flex-shrink-0">
+                            <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                            </svg>
+                        </div>
+                        <p class="text-xs font-bold text-plum uppercase tracking-wider">Filter Periode</p>
+                    </div>
+                    <span v-if="selectedMonth" class="text-[11px] text-surface-500 font-medium">
+                        Periode aktif: <strong class="text-plum">{{ formatMonth(selectedMonth) }}</strong>
+                    </span>
+                    <span v-else class="text-[11px] text-surface-500 font-medium">
+                        Semua Periode
+                    </span>
                 </div>
-                <div class="flex flex-wrap gap-1.5">
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-thin">
+                    <button
+                        @click="selectMonth('')"
+                        :class="[
+                            'timeline-btn',
+                            !selectedMonth
+                                ? 'timeline-btn-active'
+                                : 'timeline-btn-inactive'
+                        ]"
+                    >
+                        <span>Semua</span>
+                    </button>
                     <button
                         v-for="m in availableMonths" :key="m"
                         @click="selectMonth(m)"
                         :class="[
-                            'px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-200',
+                            'timeline-btn',
                             selectedMonth === m
-                                ? 'bg-gradient-rose text-white shadow-sm scale-[1.02]'
-                                : 'bg-cream-200/50 text-surface-600 hover:bg-cream-300/60 hover:text-plum'
+                                ? 'timeline-btn-active'
+                                : 'timeline-btn-inactive'
                         ]"
                     >
-                        {{ formatMonth(m) }}
+                        <span>{{ formatMonth(m) }}</span>
                     </button>
                 </div>
             </div>
