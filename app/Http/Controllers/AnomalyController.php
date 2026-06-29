@@ -27,14 +27,20 @@ class AnomalyController extends Controller
         ]);
 
         if ($flagId) {
-            $query->where(function ($q) use ($flagId, $accountId, $dateFrom, $dateTo) {
+            $query->where(function ($q) use ($flagId, $accountId, $dateFrom, $dateTo, $severity, $type) {
                 $q->where('id', $flagId)
-                  ->orWhere(function ($sq) use ($accountId, $dateFrom, $dateTo) {
+                  ->orWhere(function ($sq) use ($accountId, $dateFrom, $dateTo, $severity, $type) {
                       $sq->whereHas('transaction', function ($tq) use ($accountId, $dateFrom, $dateTo) {
                           $tq->forAccount($accountId);
                           if ($dateFrom) $tq->where('transaction_date', '>=', $dateFrom);
                           if ($dateTo) $tq->where('transaction_date', '<=', $dateTo);
                       });
+                      if ($severity !== 'ALL') {
+                          $sq->where('severity', $severity);
+                      }
+                      if ($type !== 'ALL') {
+                          $sq->where('detection_method', 'LIKE', $type . '%');
+                      }
                   });
             });
         } else {
@@ -43,20 +49,18 @@ class AnomalyController extends Controller
                 if ($dateFrom) $q->where('transaction_date', '>=', $dateFrom);
                 if ($dateTo) $q->where('transaction_date', '<=', $dateTo);
             });
+            if ($severity !== 'ALL') {
+                $query->where('severity', $severity);
+            }
+            if ($type !== 'ALL') {
+                $query->where('detection_method', 'LIKE', $type . '%');
+            }
         }
 
         if ($flagId) {
             $query->orderByRaw("CASE WHEN id = ? THEN 0 ELSE 1 END", [$flagId]);
         }
         $query->orderByDesc('detected_at');
-
-        if ($severity !== 'ALL') {
-            $query->where('severity', $severity);
-        }
-
-        if ($type !== 'ALL') {
-            $query->where('detection_method', 'LIKE', $type . '%');
-        }
 
         $anomalies = $query->paginate(20)->withQueryString();
 

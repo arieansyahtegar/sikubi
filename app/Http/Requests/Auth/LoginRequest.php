@@ -43,10 +43,30 @@ class LoginRequest extends FormRequest
         $this->ensureIsNotRateLimited();
 
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
+            RateLimiter::hit($this->throttleKey(), 30);
+
+            $attempts = RateLimiter::attempts($this->throttleKey());
+            $hint = null;
+            if ($attempts >= 5) {
+                $user = \App\Models\User::where('email', $this->input('email'))->first();
+                if ($user && $user->password_hint) {
+                    $hint = $user->password_hint;
+                }
+                $seconds = RateLimiter::availableIn($this->throttleKey());
+
+                throw ValidationException::withMessages([
+                    'email' => trans('auth.throttle', [
+                        'seconds' => $seconds,
+                        'minutes' => ceil($seconds / 60),
+                    ]),
+                    'password_hint' => $hint,
+                    'lockout_seconds' => $seconds,
+                ]);
+            }
 
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
+                'password_hint' => $hint,
             ]);
         }
 
@@ -60,7 +80,7 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5, 30)) {
             return;
         }
 
@@ -68,11 +88,16 @@ class LoginRequest extends FormRequest
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
+        $user = \App\Models\User::where('email', $this->input('email'))->first();
+        $hint = ($user && $user->password_hint) ? $user->password_hint : null;
+
         throw ValidationException::withMessages([
             'email' => trans('auth.throttle', [
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]),
+            'password_hint' => $hint,
+            'lockout_seconds' => $seconds,
         ]);
     }
 

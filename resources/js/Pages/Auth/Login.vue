@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
 
 const form = useForm({
@@ -9,6 +9,34 @@ const form = useForm({
 });
 
 const showPassword = ref(false);
+const remainingSeconds = ref(0);
+let countdownInterval = null;
+
+function startCountdown(seconds) {
+    remainingSeconds.value = seconds;
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+    }
+    countdownInterval = setInterval(() => {
+        if (remainingSeconds.value > 1) {
+            remainingSeconds.value--;
+        } else {
+            remainingSeconds.value = 0;
+            clearInterval(countdownInterval);
+            form.clearErrors('email', 'lockout_seconds');
+        }
+    }, 1000);
+}
+
+watch(
+    () => form.errors.lockout_seconds,
+    (newVal) => {
+        if (newVal) {
+            startCountdown(parseInt(newVal));
+        }
+    },
+    { immediate: true }
+);
 
 function submit() {
     form.post(route('login'), {
@@ -28,7 +56,12 @@ function onMouseMove(e) {
 }
 
 onMounted(() => window.addEventListener('mousemove', onMouseMove));
-onUnmounted(() => window.removeEventListener('mousemove', onMouseMove));
+onUnmounted(() => {
+    window.removeEventListener('mousemove', onMouseMove);
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+    }
+});
 </script>
 
 <template>
@@ -91,7 +124,25 @@ onUnmounted(() => window.removeEventListener('mousemove', onMouseMove));
                             <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                             </svg>
-                            {{ form.errors.email }}
+                            <span>
+                                <template v-if="remainingSeconds > 0">
+                                    Terlalu banyak percobaan masuk. Silakan coba lagi dalam <span class="font-bold underline">{{ remainingSeconds }}</span> detik.
+                                </template>
+                                <template v-else>
+                                    {{ form.errors.email }}
+                                </template>
+                            </span>
+                        </div>
+                    </Transition>
+
+                    <!-- Password Hint Alert -->
+                    <Transition name="login-shake">
+                        <div v-if="form.errors.password_hint" class="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs font-semibold flex flex-col gap-1.5 shadow-sm">
+                            <div class="flex items-center gap-2">
+                                <span>🔑</span>
+                                <strong>Petunjuk Kata Sandi Anda:</strong>
+                            </div>
+                            <span class="font-mono text-sm tracking-widest bg-amber-100/50 py-1 px-3 rounded-lg border border-amber-200/40 w-fit">{{ form.errors.password_hint }}</span>
                         </div>
                     </Transition>
 
@@ -155,14 +206,15 @@ onUnmounted(() => window.removeEventListener('mousemove', onMouseMove));
                     <!-- Submit -->
                     <button
                         type="submit"
-                        :disabled="form.processing"
+                        :disabled="form.processing || remainingSeconds > 0"
                         class="btn-primary w-full py-3 text-base login-submit-btn"
                     >
                         <svg v-if="form.processing" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                         </svg>
-                        {{ form.processing ? 'Masuk...' : 'Masuk' }}
+                        <span v-if="remainingSeconds > 0">Coba lagi dalam {{ remainingSeconds }}s</span>
+                        <span v-else>{{ form.processing ? 'Masuk...' : 'Masuk' }}</span>
                     </button>
                 </form>
             </div>
